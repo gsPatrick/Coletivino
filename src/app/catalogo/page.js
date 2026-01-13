@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { BookOpen, Upload, Search, Trash2, Loader2, AlertCircle, FileText, CheckCircle, Sparkles, Database, X, Eye, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { BookOpen, Upload, Search, Trash2, Loader2, AlertCircle, FileText, CheckCircle, Sparkles, Database, X, Eye, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Plus, Paperclip } from 'lucide-react';
 import api from '../../services/api';
 
 export default function CatalogPage() {
@@ -17,6 +17,10 @@ export default function CatalogPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadStep, setUploadStep] = useState(''); // 'uploading', 'indexing', 'success', 'error'
     const [uploadError, setUploadError] = useState('');
+
+    // Multi-File Price Upload State
+    const [priceFiles, setPriceFiles] = useState([]);
+    const priceInputRef = useRef(null);
 
     const [catalogStatus, setCatalogStatus] = useState({ totalProducts: 0, catalogs: [] });
     const fileInputRef = useRef(null);
@@ -133,6 +137,29 @@ export default function CatalogPage() {
         }
     };
 
+    // Price File Handlers
+    const handlePriceFileSelect = (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const newFiles = Array.from(e.target.files).filter(f => f.type === 'application/pdf');
+            setPriceFiles(prev => [...prev, ...newFiles]);
+        }
+        // Reset input
+        e.target.value = '';
+    };
+
+    const handlePriceDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const newFiles = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+            setPriceFiles(prev => [...prev, ...newFiles]);
+        }
+    };
+
+    const removePriceFile = (index) => {
+        setPriceFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
     const filteredProducts = products.filter(p =>
         p.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -235,19 +262,62 @@ export default function CatalogPage() {
                         <p style={{ fontSize: '0.75rem', color: '#e65100', marginTop: '4px' }}>Arquivo com imagens e códigos</p>
                     </div>
 
-                    <div>
+                    <div
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onDrop={handlePriceDrop}
+                    >
                         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#5d4037' }}>
                             <Database size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-                            Tabela de Preços
+                            Tabela de Preços (Múltiplos)
                         </label>
-                        <input
-                            type="file"
-                            id="pricePdfFile"
-                            accept="application/pdf"
-                            multiple
-                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '2px solid #ffcc80', background: 'white', fontSize: '0.9rem', cursor: 'pointer', outline: 'none' }}
-                        />
-                        <p style={{ fontSize: '0.75rem', color: '#e65100', marginTop: '4px' }}>Opcional: Selecione um ou múltiplos PDFs de preço</p>
+
+                        {/* File List */}
+                        {priceFiles.length > 0 && (
+                            <div style={{ marginBottom: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {priceFiles.map((file, idx) => (
+                                    <div key={idx} style={{ background: 'white', border: '1px solid #ffcc80', borderRadius: '8px', padding: '6px 10px', fontSize: '0.85rem', color: '#e65100', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <FileText size={14} />
+                                        <span style={{ maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{file.name}</span>
+                                        <button
+                                            onClick={() => removePriceFile(idx)}
+                                            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#bf360c', display: 'flex', padding: 0 }}
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div
+                            onClick={() => priceInputRef.current?.click()}
+                            style={{
+                                width: '100%',
+                                padding: '16px',
+                                borderRadius: '10px',
+                                border: '2px dashed #ffcc80',
+                                background: 'rgba(255, 255, 255, 0.6)',
+                                fontSize: '0.9rem',
+                                cursor: 'pointer',
+                                textAlign: 'center',
+                                color: '#e65100',
+                                transition: 'all 0.2s'
+                            }}
+                            className="hover:bg-white transition-colors"
+                        >
+                            <input
+                                type="file"
+                                ref={priceInputRef}
+                                onChange={handlePriceFileSelect}
+                                accept="application/pdf"
+                                multiple
+                                style={{ display: 'none' }}
+                            />
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                <Paperclip size={20} />
+                                <span style={{ fontWeight: 600 }}>Clique ou Solte Arquivos Aqui</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -288,11 +358,10 @@ export default function CatalogPage() {
                                 const formData = new FormData();
                                 formData.append('pdf', file);
 
-                                const priceInput = document.getElementById('pricePdfFile');
-                                if (priceInput && priceInput.files && priceInput.files.length > 0) {
-                                    for (let i = 0; i < priceInput.files.length; i++) {
-                                        formData.append('pricePdf', priceInput.files[i]);
-                                    }
+                                if (priceFiles.length > 0) {
+                                    priceFiles.forEach(pf => {
+                                        formData.append('pricePdf', pf);
+                                    });
                                 }
 
                                 formData.append('markupPercentage', parseFloat(markup));
