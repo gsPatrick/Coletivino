@@ -4,7 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Head from 'next/head';
-import { Upload, FileText, X, CheckCircle, Database, AlertCircle, Loader2, Play, Edit3, Trash2, Plus, Star, LogOut, ArrowRight, ToggleLeft, ToggleRight, Settings } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle, Database, AlertCircle, Loader2, Play, Edit3, Trash2, Plus, Star, LogOut, ArrowRight, ToggleLeft, ToggleRight, Settings, Users } from 'lucide-react';
+
+const TARGET_GROUPS = [
+    { id: '120363166864812600-group', name: 'Grupo VIP' },
+    { id: '120363402015772186-group', name: 'Grupo Coletivino' }
+];
 
 export default function CampaignsPage() {
     const router = useRouter();
@@ -16,7 +21,8 @@ export default function CampaignsPage() {
     const [formData, setFormData] = useState({
         name: '',
         isActive: false,
-        markupPercentage: 0
+        markupPercentage: 0,
+        targetGroups: []
     });
     const [editingId, setEditingId] = useState(null);
 
@@ -48,20 +54,25 @@ export default function CampaignsPage() {
     }, []);
 
     const toggleActivation = async (campaign) => {
-        if (campaign.isActive) return; // Don't deactivate the active one directly, user activates another
-        if (!confirm(`Deseja ativar a campanha "${campaign.name}"? A atual será desativada.`)) return;
-        try {
-            // Optimistic update
-            setCampaigns(prev => prev.map(c => ({
-                ...c,
-                isActive: c.id === campaign.id
-            })));
+        if (!campaign.isActive) {
+            // Activating
+        } else {
+            // Deactivating
+        }
 
-            await axios.put(`${API_URL}/campaigns/${campaign.id}`, { isActive: true });
-            fetchCampaigns(); // Sync fully
+        // Optimistic toggle
+        const newStatus = !campaign.isActive;
+
+        try {
+            setCampaigns(prev => prev.map(c =>
+                c.id === campaign.id ? { ...c, isActive: newStatus } : c
+            ));
+
+            await axios.put(`${API_URL}/campaigns/${campaign.id}`, { isActive: newStatus });
+            fetchCampaigns();
         } catch (error) {
-            console.error('Error activating campaign', error);
-            alert('Erro ao ativar campanha.');
+            console.error('Error toggling campaign', error);
+            alert('Erro ao alterar status da campanha.');
             fetchCampaigns();
         }
     };
@@ -157,7 +168,8 @@ export default function CampaignsPage() {
         setFormData({
             name: c.name,
             isActive: c.isActive,
-            markupPercentage: c.markupPercentage || 0
+            markupPercentage: c.markupPercentage || 0,
+            targetGroups: c.targetGroups || []
         });
         setVisualFile(null);
         setPriceFiles([]);
@@ -166,7 +178,7 @@ export default function CampaignsPage() {
 
     const closeModal = () => {
         setIsModalOpen(false);
-        setFormData({ name: '', isActive: false, markupPercentage: 0 });
+        setFormData({ name: '', isActive: false, markupPercentage: 0, targetGroups: [] });
         setEditingId(null);
         setVisualFile(null);
         setPriceFiles([]);
@@ -184,8 +196,12 @@ export default function CampaignsPage() {
     };
 
     // Derived State
-    const activeCampaign = campaigns.find(c => c.isActive);
-    const otherCampaigns = campaigns.filter(c => !c.isActive);
+    // Support multiple active campaigns
+    const activeCampaigns = campaigns.filter(c => c.isActive);
+    const inactiveCampaigns = campaigns.filter(c => !c.isActive);
+
+    // For Hero display, just show the most recent active or the first one found
+    const heroCampaign = activeCampaigns.length > 0 ? activeCampaigns[0] : null;
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-12 px-6 md:px-12 pt-8">
@@ -231,7 +247,7 @@ export default function CampaignsPage() {
                     <div className="space-y-12">
 
                         {/* HERO SECTION - Active Campaign (Focus) */}
-                        {activeCampaign ? (
+                        {heroCampaign ? (
                             <section className="animate-slideUp">
                                 <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <Star size={16} className="text-brand-orange fill-brand-orange" />
@@ -247,12 +263,28 @@ export default function CampaignsPage() {
                                                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Ativa Agora
                                             </div>
                                             <h2 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight tracking-tight">
-                                                {activeCampaign.name}
+                                                {heroCampaign.name}
                                             </h2>
                                             <div className="flex items-center gap-6 text-gray-600">
                                                 <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg border border-gray-100">
                                                     <Database size={16} className="text-gray-400" />
-                                                    <span className="text-sm">Markup: <span className="font-bold text-gray-900">{activeCampaign.markupPercentage}%</span></span>
+                                                    <span className="text-sm">Markup: <span className="font-bold text-gray-900">{heroCampaign.markupPercentage}%</span></span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(heroCampaign.targetGroups && heroCampaign.targetGroups.length > 0) ?
+                                                        heroCampaign.targetGroups.map(gid => {
+                                                            const gName = TARGET_GROUPS.find(bg => bg.id === gid)?.name || 'Grupo Desconhecido';
+                                                            return (
+                                                                <span key={gid} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded border border-blue-100">
+                                                                    <Users size={12} /> {gName}
+                                                                </span>
+                                                            )
+                                                        })
+                                                        :
+                                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 text-gray-500 text-xs font-bold rounded border border-gray-100">
+                                                            Global (Todos)
+                                                        </span>
+                                                    }
                                                 </div>
                                             </div>
                                         </div>
@@ -267,9 +299,9 @@ export default function CampaignsPage() {
                                             </button>
 
                                             <div className="flex gap-2">
-                                                {activeCampaign.visualPdfPath && (
+                                                {heroCampaign.visualPdfPath && (
                                                     <button
-                                                        onClick={() => handleGenerate(activeCampaign.id)}
+                                                        onClick={() => handleGenerate(heroCampaign.id)}
                                                         disabled={isGenerating}
                                                         className="text-gray-500 hover:text-brand-orange text-sm font-medium px-4 py-2 hover:bg-orange-50 rounded-lg transition-colors flex items-center gap-1"
                                                     >
@@ -278,202 +310,272 @@ export default function CampaignsPage() {
                                                     </button>
                                                 )}
                                                 <button
-                                                    onClick={() => handleEdit(activeCampaign)}
+                                                    onClick={() => handleEdit(heroCampaign)}
                                                     className="text-gray-500 hover:text-blue-600 text-sm font-medium px-4 py-2 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1"
                                                 >
                                                     <Edit3 size={14} /> Editar
                                                 </button>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </section>
+                                    </div >
+
+                                    {/* Additional Active Campaigns Indicator (if > 1) */}
+                                    {
+                                        activeCampaigns.length > 1 && (
+                                            <div className="bg-orange-50/50 border-t border-orange-100 p-4 flex items-center justify-between text-sm text-orange-800">
+                                                <span>
+                                                    <strong>+{activeCampaigns.length - 1}</strong> outra(s) campanha(s) ativa(s) simultaneamente.
+                                                </span>
+                                                <span className="text-xs opacity-75">Veja abaixo na lista</span>
+                                            </div>
+                                        )
+                                    }
+
+                                </div >
+                            </section >
                         ) : (
                             <div className="bg-red-50 border border-red-100 rounded-2xl p-8 text-center">
                                 <AlertCircle size={40} className="mx-auto text-red-400 mb-3" />
                                 <h3 className="text-lg font-bold text-red-800">Nenhuma Campanha Ativa</h3>
                                 <p className="text-red-600">Por favor, ative uma coleção abaixo para entrar no sistema.</p>
                             </div>
-                        )}
+                        )
+                        }
 
-                        {/* GRID SECTION - Other Campaigns */}
+                        {/* GRID SECTION - All Campaigns (Active & Inactive mixed or just inactive?) 
+                            The design requested shows "Outras". Use logic to show ALL except Hero, OR list Inactive separately.
+                            Given "Concurrent", maybe show LIST of EVERYTHING? 
+                            Let's keep "Outras" but clarify logic. Hero shows "Primary". 
+                            Actually, let's show ALL campaigns in the grid logic (status toggle makes sense everywhere).
+                            But we don't want to duplicate Hero. 
+                            If multiple active, Hero shows the FIRST one. The others should appear below?
+                            Let's exclude Hero from the generic grid to avoid dupes.
+                        */}
                         <section>
                             <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">
-                                Outras Coleções Disponíveis
+                                Gerenciar Campanhas
                             </h2>
-                            {otherCampaigns.length === 0 ? (
-                                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
-                                    <p className="text-gray-400 font-medium">Você só tem a campanha ativa no momento.</p>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                    {otherCampaigns.map(c => (
-                                        <div key={c.id} className="group bg-white rounded-2xl p-5 border border-gray-200/60 shadow-sm hover:shadow-xl hover:border-gray-300 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between h-full relative overflow-hidden">
 
-                                            <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
-                                                <button onClick={() => handleEdit(c)} className="p-1.5 bg-white/90 shadow rounded-md hover:text-blue-500 text-gray-400"><Edit3 size={14} /></button>
-                                                <button onClick={() => handleDelete(c.id)} className="p-1.5 bg-white/90 shadow rounded-md hover:text-red-500 text-gray-400"><Trash2 size={14} /></button>
-                                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {campaigns.filter(c => c.id !== (heroCampaign?.id)).map(c => (
+                                    <div key={c.id} className={`group bg-white rounded-2xl p-5 border ${c.isActive ? 'border-green-400 ring-2 ring-green-50' : 'border-gray-200/60'} shadow-sm hover:shadow-xl hover:border-gray-300 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between h-full relative overflow-hidden`}>
 
-                                            <div>
-                                                <div className="w-10 h-10 rounded-xl bg-gray-100 mb-4 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                                        <div className="absolute top-0 right-0 p-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
+                                            <button onClick={() => handleEdit(c)} className="p-1.5 bg-white/90 shadow rounded-md hover:text-blue-500 text-gray-400"><Edit3 size={14} /></button>
+                                            <button onClick={() => handleDelete(c.id)} className="p-1.5 bg-white/90 shadow rounded-md hover:text-red-500 text-gray-400"><Trash2 size={14} /></button>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${c.isActive ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
                                                     <FileText size={20} />
                                                 </div>
+                                                {c.isActive && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded border border-green-200">Ativa</span>}
+                                            </div>
 
-                                                <h3 className="text-lg font-bold text-gray-800 mb-1 leading-snug">{c.name}</h3>
+                                            <h3 className="text-lg font-bold text-gray-800 mb-1 leading-snug">{c.name}</h3>
 
-                                                <div className="flex items-center gap-2 text-xs text-gray-500 mb-6">
-                                                    <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded">
-                                                        <Database size={12} /> {c.markupPercentage}%
-                                                    </div>
+                                            <div className="flex flex-wrap gap-2 mb-4 mt-2">
+                                                {(c.targetGroups && c.targetGroups.length > 0) ?
+                                                    c.targetGroups.map(gid => (
+                                                        <span key={gid} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 text-gray-600 text-[10px] font-bold rounded border border-gray-100">
+                                                            {TARGET_GROUPS.find(bg => bg.id === gid)?.name.replace('Grupo ', '') || 'VIP/Colet'}
+                                                        </span>
+                                                    ))
+                                                    :
+                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 text-gray-400 text-[10px] rounded border border-gray-100">Global</span>
+                                                }
+                                            </div>
+
+                                            <div className="flex items-center gap-2 text-xs text-gray-500 mb-6">
+                                                <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded">
+                                                    <Database size={12} /> {c.markupPercentage || 0}%
                                                 </div>
                                             </div>
-
-                                            <div className="space-y-2 mt-auto">
-                                                <button
-                                                    onClick={() => toggleActivation(c)}
-                                                    className="w-full py-2.5 rounded-xl border-2 border-gray-100 text-gray-500 font-bold text-sm hover:border-green-500 hover:text-green-600 hover:bg-green-50 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <ToggleLeft size={18} /> Ativar Coleção
-                                                </button>
-                                            </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+
+                                        <div className="space-y-2 mt-auto">
+                                            <button
+                                                onClick={() => toggleActivation(c)}
+                                                className={`w-full py-2.5 rounded-xl border-2 font-bold text-sm transition-all flex items-center justify-center gap-2 ${c.isActive ? 'border-red-100 text-red-500 hover:bg-red-50' : 'border-gray-100 text-gray-500 hover:border-green-500 hover:text-green-600 hover:bg-green-50'}`}
+                                            >
+                                                {c.isActive ? (
+                                                    <><ToggleRight size={18} /> Desativar</>
+                                                ) : (
+                                                    <><ToggleLeft size={18} /> Ativar</>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </section>
 
-                    </div>
+
+                    </div >
                 )}
-            </div>
+            </div >
 
             {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8 flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
-                        <div className="p-8 border-b border-gray-100 flex justify-between items-center shrink-0">
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-800">{editingId ? 'Editar Campanha' : 'Nova Campanha'}</h2>
-                                <p className="text-gray-400 text-sm mt-1">Preencha os dados e anexe os arquivos.</p>
+            {
+                isModalOpen && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8 flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+                            <div className="p-8 border-b border-gray-100 flex justify-between items-center shrink-0">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800">{editingId ? 'Editar Campanha' : 'Nova Campanha'}</h2>
+                                    <p className="text-gray-400 text-sm mt-1">Preencha os dados e anexe os arquivos.</p>
+                                </div>
+                                <button onClick={closeModal} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-gray-600 transition-colors"><X size={20} /></button>
                             </div>
-                            <button onClick={closeModal} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-gray-600 transition-colors"><X size={20} /></button>
-                        </div>
 
-                        <div className="p-8 overflow-y-auto custom-scrollbar">
-                            <form id="campaignForm" onSubmit={handleSubmit} className="space-y-8">
-                                {/* Basic Info */}
-                                <div className="grid grid-cols-1 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">Nome da Coleção</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-orange focus:border-transparent outline-none transition-all"
-                                            placeholder="Ex: Primavera/Verão 2026"
-                                            value={formData.name}
-                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Catalog Configuration */}
-                                <div className="border-t border-gray-100 pt-8">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
-                                        <Database size={20} className="text-blue-500" />
-                                        Arquivos & Preços
-                                    </h3>
-                                    <p className="text-gray-400 text-sm mb-6">Configure o catálogo base e as tabelas de custo.</p>
-
-                                    <div className="mb-6">
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">Markup Padrão (%)</label>
-                                        <div className="flex items-center gap-3">
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                className="w-32 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-brand-orange"
-                                                value={formData.markupPercentage}
-                                                onChange={e => setFormData({ ...formData, markupPercentage: e.target.value })}
-                                            />
-                                            <span className="text-sm text-gray-500">% sobre o custo</span>
-                                        </div>
-                                    </div>
-
+                            <div className="p-8 overflow-y-auto custom-scrollbar">
+                                <form id="campaignForm" onSubmit={handleSubmit} className="space-y-8">
+                                    {/* Basic Info */}
                                     <div className="grid grid-cols-1 gap-6">
-                                        {/* Visual PDF */}
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-bold text-gray-700">Catálogo Visual (PDF)</label>
-                                            <div
-                                                onClick={() => visualInputRef.current?.click()}
-                                                className={`group border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${visualFile ? 'border-green-400 bg-green-50/50' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'}`}
-                                            >
-                                                <input type="file" hidden ref={visualInputRef} accept=".pdf" onChange={handleVisualFileSelect} />
-                                                <div className={`w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center transition-colors ${visualFile ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400 group-hover:text-blue-500'}`}>
-                                                    <FileText size={24} />
-                                                </div>
-                                                <span className="text-sm font-medium text-gray-700 block truncate">
-                                                    {visualFile ? visualFile.name : 'Clique para carregar o Catálogo Visual'}
-                                                </span>
-                                                <span className="text-xs text-gray-400 mt-1 block">PDF até 100MB</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Price PDFs */}
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-bold text-gray-700">Tabelas de Preço (PDFs)</label>
-                                            <div
-                                                className="border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 rounded-2xl p-6 text-center cursor-pointer transition-all"
-                                                onClick={() => priceInputRef.current?.click()}
-                                            >
-                                                <input type="file" hidden ref={priceInputRef} accept=".pdf" multiple onChange={handlePriceFileSelect} />
-                                                <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-400 mx-auto mb-3 flex items-center justify-center">
-                                                    <Upload size={24} />
-                                                </div>
-                                                <span className="text-sm font-medium text-gray-700">Adicionar Tabelas de Preço</span>
-                                                <span className="text-xs text-gray-400 mt-1 block">Pode selecionar múltiplos arquivos</span>
-                                            </div>
-
-                                            {/* File List */}
-                                            {priceFiles.length > 0 && (
-                                                <div className="flex flex-wrap gap-2 mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                    {priceFiles.map((f, i) => (
-                                                        <span key={i} className="inline-flex items-center gap-2 bg-white pl-3 pr-2 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200 shadow-sm">
-                                                            <span className="truncate max-w-[150px]">{f.name}</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => { e.stopPropagation(); setPriceFiles(prev => prev.filter((_, idx) => idx !== i)); }}
-                                                                className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-md transition-colors"
-                                                            >
-                                                                <X size={14} />
-                                                            </button>
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Nome da Coleção</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-orange focus:border-transparent outline-none transition-all"
+                                                placeholder="Ex: Primavera/Verão 2026"
+                                                value={formData.name}
+                                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                            />
                                         </div>
                                     </div>
-                                </div>
-                            </form>
-                        </div>
 
-                        <div className="p-8 border-t border-gray-100 flex justify-end gap-3 shrink-0 bg-gray-50/80 backdrop-blur rounded-b-3xl">
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                className="px-6 py-3 text-gray-600 hover:bg-gray-100 rounded-xl font-semibold transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                form="campaignForm"
-                                className="px-8 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg font-bold transition-all hover:scale-105 active:scale-95"
-                            >
-                                {editingId ? 'Salvar Alterações' : 'Criar Campanha'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Grupos Alvo</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {TARGET_GROUPS.map(group => (
+                                                <label key={group.id} className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all ${formData.targetGroups.includes(group.id) ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-100' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                                                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${formData.targetGroups.includes(group.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white'}`}>
+                                                        {formData.targetGroups.includes(group.id) && <CheckCircle size={14} className="text-white" />}
+                                                    </div>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="hidden"
+                                                        checked={formData.targetGroups.includes(group.id)}
+                                                        onChange={(e) => {
+                                                            const isChecked = e.target.checked;
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                targetGroups: isChecked
+                                                                    ? [...prev.targetGroups, group.id]
+                                                                    : prev.targetGroups.filter(id => id !== group.id)
+                                                            }));
+                                                        }}
+                                                    />
+                                                    <span className={`text-sm font-medium ${formData.targetGroups.includes(group.id) ? 'text-blue-900' : 'text-gray-600'}`}>
+                                                        {group.name}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-gray-400 mt-2">Selecione para qual grupo esta campanha será válida. Pode selecionar ambos.</p>
+                                    </div>
+
+                                    {/* Catalog Configuration */}
+                                    <div className="border-t border-gray-100 pt-8">
+                                        <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+                                            <Database size={20} className="text-blue-500" />
+                                            Arquivos & Preços
+                                        </h3>
+                                        <p className="text-gray-400 text-sm mb-6">Configure o catálogo base e as tabelas de custo.</p>
+
+                                        <div className="mb-6">
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Markup Padrão (%)</label>
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    className="w-32 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-brand-orange"
+                                                    value={formData.markupPercentage}
+                                                    onChange={e => setFormData({ ...formData, markupPercentage: e.target.value })}
+                                                />
+                                                <span className="text-sm text-gray-500">% sobre o custo</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-6">
+                                            {/* Visual PDF */}
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-bold text-gray-700">Catálogo Visual (PDF)</label>
+                                                <div
+                                                    onClick={() => visualInputRef.current?.click()}
+                                                    className={`group border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${visualFile ? 'border-green-400 bg-green-50/50' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'}`}
+                                                >
+                                                    <input type="file" hidden ref={visualInputRef} accept=".pdf" onChange={handleVisualFileSelect} />
+                                                    <div className={`w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center transition-colors ${visualFile ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400 group-hover:text-blue-500'}`}>
+                                                        <FileText size={24} />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-700 block truncate">
+                                                        {visualFile ? visualFile.name : 'Clique para carregar o Catálogo Visual'}
+                                                    </span>
+                                                    <span className="text-xs text-gray-400 mt-1 block">PDF até 100MB</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Price PDFs */}
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-bold text-gray-700">Tabelas de Preço (PDFs)</label>
+                                                <div
+                                                    className="border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 rounded-2xl p-6 text-center cursor-pointer transition-all"
+                                                    onClick={() => priceInputRef.current?.click()}
+                                                >
+                                                    <input type="file" hidden ref={priceInputRef} accept=".pdf" multiple onChange={handlePriceFileSelect} />
+                                                    <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-400 mx-auto mb-3 flex items-center justify-center">
+                                                        <Upload size={24} />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-700">Adicionar Tabelas de Preço</span>
+                                                    <span className="text-xs text-gray-400 mt-1 block">Pode selecionar múltiplos arquivos</span>
+                                                </div>
+
+                                                {/* File List */}
+                                                {priceFiles.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                                        {priceFiles.map((f, i) => (
+                                                            <span key={i} className="inline-flex items-center gap-2 bg-white pl-3 pr-2 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200 shadow-sm">
+                                                                <span className="truncate max-w-[150px]">{f.name}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => { e.stopPropagation(); setPriceFiles(prev => prev.filter((_, idx) => idx !== i)); }}
+                                                                    className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-md transition-colors"
+                                                                >
+                                                                    <X size={14} />
+                                                                </button>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div className="p-8 border-t border-gray-100 flex justify-end gap-3 shrink-0 bg-gray-50/80 backdrop-blur rounded-b-3xl">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="px-6 py-3 text-gray-600 hover:bg-gray-100 rounded-xl font-semibold transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    form="campaignForm"
+                                    className="px-8 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg font-bold transition-all hover:scale-105 active:scale-95"
+                                >
+                                    {editingId ? 'Salvar Alterações' : 'Criar Campanha'}
+                                </button>
+                            </div>
+                        </div >
+                    </div >
+                )
+            }
+        </div >
     );
 }
