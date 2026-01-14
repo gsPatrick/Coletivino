@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Head from 'next/head';
-import { Upload, FileText, X, CheckCircle, Database, AlertCircle, Loader2, Play, Edit3, Trash2, Plus, Star, LogOut, ArrowRight, ToggleLeft, ToggleRight, Settings, Users } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle, Database, AlertCircle, Loader2, Play, Edit3, Trash2, Plus, Star, LogOut, ArrowRight, ToggleLeft, ToggleRight, Settings, Users, Paperclip } from 'lucide-react';
 
 const TARGET_GROUPS = [
     { id: '120363166864812600-group', name: 'Grupo VIP' },
@@ -30,6 +30,13 @@ export default function CampaignsPage() {
     const [visualFile, setVisualFile] = useState(null);
     const [priceFiles, setPriceFiles] = useState([]);
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Quick Generator State (Main Page)
+    const [quickVisualFile, setQuickVisualFile] = useState(null);
+    const [quickPriceFiles, setQuickPriceFiles] = useState([]);
+    const [quickMarkup, setQuickMarkup] = useState(20);
+    const quickVisualInputRef = useRef(null);
+    const quickPriceInputRef = useRef(null);
 
     const visualInputRef = useRef(null);
     const priceInputRef = useRef(null);
@@ -332,6 +339,167 @@ export default function CampaignsPage() {
                                     }
 
                                 </div >
+
+                                {/* QUICK CATALOG GENERATOR SECTION */}
+                                <div className="mt-8 bg-orange-50 border border-orange-200 rounded-3xl p-8 relative overflow-hidden">
+                                    {/* Background Decor */}
+                                    <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-orange-100/50 to-transparent pointer-events-none" />
+
+                                    <div className="flex flex-col items-center justify-center text-center gap-4 mb-8 relative z-10">
+                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-200 text-white mb-1">
+                                            <FileText size={32} />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-orange-900">Gerar Catálogo com Markup</h2>
+                                            <p className="text-orange-700/80 text-base max-w-2xl mx-auto">Faça upload de um PDF e aplique uma porcentagem de markup nos preços</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_120px_auto] gap-6 items-end relative z-10 max-w-5xl mx-auto">
+
+                                        {/* Visual PDF Input */}
+                                        <div>
+                                            <label className="block text-sm font-bold text-orange-900 mb-2 flex items-center gap-2">
+                                                <Upload size={14} /> Catálogo (Fotos)
+                                            </label>
+                                            <div
+                                                onClick={() => quickVisualInputRef.current?.click()}
+                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    if (e.dataTransfer.files?.[0] && e.dataTransfer.files[0].type === 'application/pdf') {
+                                                        setQuickVisualFile(e.dataTransfer.files[0]);
+                                                    }
+                                                }}
+                                                className="bg-white border-2 border-orange-200 rounded-xl px-4 py-3 cursor-pointer hover:border-orange-400 transition-colors flex items-center gap-3 truncate"
+                                            >
+                                                <input
+                                                    type="file"
+                                                    hidden
+                                                    ref={quickVisualInputRef}
+                                                    accept=".pdf"
+                                                    onChange={(e) => {
+                                                        if (e.target.files?.[0]) setQuickVisualFile(e.target.files[0]);
+                                                    }}
+                                                />
+                                                <span className={`text-sm font-medium truncate ${quickVisualFile ? 'text-gray-800' : 'text-gray-400'}`}>
+                                                    {quickVisualFile ? quickVisualFile.name : 'Escolher arquivo...'}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-orange-600/60 mt-1">Arquivo com imagens e códigos</p>
+                                        </div>
+
+                                        {/* Price PDFs Input */}
+                                        <div>
+                                            <label className="block text-sm font-bold text-orange-900 mb-2 flex items-center gap-2">
+                                                <Database size={14} /> Tabela de Preços (Múltiplos)
+                                            </label>
+
+                                            {/* File List */}
+                                            {quickPriceFiles.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mb-2">
+                                                    {quickPriceFiles.map((f, i) => (
+                                                        <div key={i} className="bg-white border border-orange-200 rounded-lg px-2 py-1 flex items-center gap-1 text-xs text-orange-800">
+                                                            <Paperclip size={10} />
+                                                            <span className="truncate max-w-[80px]">{f.name}</span>
+                                                            <button onClick={() => setQuickPriceFiles(prev => prev.filter((_, idx) => idx !== i))} className="hover:text-red-500"><X size={10} /></button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <div
+                                                onClick={() => quickPriceInputRef.current?.click()}
+                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    if (e.dataTransfer.files?.length > 0) {
+                                                        const newFiles = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+                                                        setQuickPriceFiles(prev => [...prev, ...newFiles]);
+                                                    }
+                                                }}
+                                                className="bg-white border-2 border-dashed border-orange-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-orange-50 hover:border-orange-500 transition-colors flex items-center justify-center gap-2 text-orange-500"
+                                            >
+                                                <input
+                                                    type="file"
+                                                    hidden
+                                                    ref={quickPriceInputRef}
+                                                    accept=".pdf"
+                                                    multiple
+                                                    onChange={(e) => {
+                                                        if (e.target.files?.length) {
+                                                            setQuickPriceFiles(prev => [...prev, ...Array.from(e.target.files)]);
+                                                            e.target.value = ''; // Reset
+                                                        }
+                                                    }}
+                                                />
+                                                <Paperclip size={16} />
+                                                <span className="text-sm font-bold">Clique ou Solte Arquivos Aqui</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Markup Input */}
+                                        <div>
+                                            <label className="block text-sm font-bold text-orange-900 mb-2">Markup %</label>
+                                            <input
+                                                type="number"
+                                                value={quickMarkup}
+                                                onChange={(e) => setQuickMarkup(e.target.value)}
+                                                className="w-full px-4 py-3 bg-white border-2 border-orange-200 rounded-xl text-center font-bold text-gray-800 focus:border-orange-500 outline-none"
+                                            />
+                                        </div>
+
+                                        {/* Generate Button */}
+                                        <button
+                                            onClick={async () => {
+                                                if (!quickVisualFile && !heroCampaign.visualPdfPath) {
+                                                    alert('Por favor, selecione um Catálogo Visual (PDF) ou certifique-se que a campanha já tem um.');
+                                                    return;
+                                                }
+
+                                                setIsGenerating(true);
+                                                try {
+                                                    const formData = new FormData();
+                                                    formData.append('campaignId', heroCampaign.id);
+                                                    if (quickVisualFile) formData.append('pdf', quickVisualFile);
+
+                                                    if (quickPriceFiles.length > 0) {
+                                                        quickPriceFiles.forEach(f => formData.append('pricePdfs', f));
+                                                    }
+
+                                                    formData.append('markupPercentage', quickMarkup);
+
+                                                    const response = await axios.post(`${API_URL}/catalog-markup/generate`, formData, {
+                                                        responseType: 'blob'
+                                                    });
+
+                                                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                                                    const link = document.createElement('a');
+                                                    link.href = url;
+                                                    link.setAttribute('download', `catalogo-${heroCampaign.name}-${quickMarkup}pct.pdf`);
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    link.remove();
+                                                    alert('Gerado com Sucesso!');
+
+                                                } catch (error) {
+                                                    console.error(error);
+                                                    alert('Erro ao gerar catálogo.');
+                                                } finally {
+                                                    setIsGenerating(false);
+                                                }
+                                            }}
+                                            disabled={isGenerating}
+                                            className="h-[52px] bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl px-6 shadow-lg shadow-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2"
+                                        >
+                                            {isGenerating ? <Loader2 className="animate-spin" /> : 'Gerar PDF'}
+                                        </button>
+
+                                    </div>
+                                </div>
+
                             </section >
                         ) : (
                             <div className="bg-red-50 border border-red-100 rounded-2xl p-8 text-center">
