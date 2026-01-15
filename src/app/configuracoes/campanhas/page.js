@@ -41,7 +41,8 @@ export default function CampaignsPage() {
     const visualInputRef = useRef(null);
     const priceInputRef = useRef(null);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://n8n-apintegromat.r954jc.easypanel.host';
+    import Link from 'next/link';
+    import api from '../../../services/api';
 
     const fetchCampaigns = async () => {
         try {
@@ -455,7 +456,7 @@ export default function CampaignsPage() {
 
                                                     formData.append('markupPercentage', quickMarkup);
 
-                                                    const response = await axios.post(`${API_URL}/catalog/generate-markup-upload`, formData, {
+                                                    const response = await api.post('/catalog/generate-markup-upload', formData, {
                                                         headers: { 'Content-Type': 'multipart/form-data' },
                                                         responseType: 'blob',
                                                         timeout: 300000 // 5 minutes to allow for OpenAI Analysis
