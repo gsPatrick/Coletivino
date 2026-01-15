@@ -260,91 +260,82 @@ export default function CampaignsPage() {
                     <div className="space-y-12">
 
                         {/* HERO SECTION - Active Campaign (Focus) */}
-                        {heroCampaign ? (
-                            <section className="animate-slideUp">
+                        {activeCampaigns.length > 0 ? (
+                            <section className="animate-slideUp space-y-6">
                                 <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <Star size={16} className="text-brand-orange fill-brand-orange" />
-                                    Campanha Selecionada
+                                    {activeCampaigns.length > 1 ? `${activeCampaigns.length} Campanhas Ativas` : 'Campanha Selecionada'}
                                 </h2>
-                                <div className="relative overflow-hidden bg-white rounded-3xl shadow-xl border border-brand-orange/20 ring-4 ring-orange-50/50 group">
-                                    {/* Abstract Gradient */}
-                                    <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-orange-50 via-white/0 to-transparent opacity-60" />
 
-                                    <div className="relative p-10 md:p-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-                                        <div className="flex-1 space-y-5">
-                                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wide border border-green-200">
-                                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Ativa Agora
-                                            </div>
-                                            <h2 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight tracking-tight">
-                                                {heroCampaign.name}
-                                            </h2>
-                                            <div className="flex items-center gap-6 text-gray-600">
-                                                <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg border border-gray-100">
-                                                    <Database size={16} className="text-gray-400" />
-                                                    <span className="text-sm">Markup: <span className="font-bold text-gray-900">{heroCampaign.markupPercentage}%</span></span>
+                                {/* Loop through ALL active campaigns */}
+                                {activeCampaigns.map((campaign, index) => (
+                                    <div key={campaign.id} className={`relative overflow-hidden bg-white rounded-3xl shadow-xl border border-brand-orange/20 ring-4 ring-orange-50/50 group ${index > 0 ? 'mt-4' : ''}`}>
+                                        {/* Abstract Gradient */}
+                                        <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-orange-50 via-white/0 to-transparent opacity-60" />
+
+                                        <div className="relative p-8 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                                            <div className="flex-1 space-y-4">
+                                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wide border border-green-200">
+                                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Ativa Agora
                                                 </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {(heroCampaign.targetGroups && heroCampaign.targetGroups.length > 0) ?
-                                                        heroCampaign.targetGroups.map(gid => {
-                                                            const gName = TARGET_GROUPS.find(bg => bg.id === gid)?.name || 'Grupo Desconhecido';
-                                                            return (
-                                                                <span key={gid} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded border border-blue-100">
-                                                                    <Users size={12} /> {gName}
-                                                                </span>
-                                                            )
-                                                        })
-                                                        :
-                                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 text-gray-500 text-xs font-bold rounded border border-gray-100">
-                                                            Global (Todos)
-                                                        </span>
-                                                    }
+                                                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight tracking-tight">
+                                                    {campaign.name}
+                                                </h2>
+                                                <div className="flex items-center gap-4 text-gray-600 flex-wrap">
+                                                    <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg border border-gray-100">
+                                                        <Database size={16} className="text-gray-400" />
+                                                        <span className="text-sm">Markup: <span className="font-bold text-gray-900">{campaign.markupPercentage}%</span></span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {(campaign.targetGroups && campaign.targetGroups.length > 0) ?
+                                                            campaign.targetGroups.map(gid => {
+                                                                const gName = TARGET_GROUPS.find(bg => bg.id === gid)?.name || 'Grupo';
+                                                                return (
+                                                                    <span key={gid} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded border border-blue-100">
+                                                                        <Users size={12} /> {gName}
+                                                                    </span>
+                                                                )
+                                                            })
+                                                            :
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 text-gray-500 text-xs font-bold rounded border border-gray-100">
+                                                                Global (Todos)
+                                                            </span>
+                                                        }
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Main Action: ENTER */}
-                                        <div className="flex flex-col items-center gap-4 shrink-0 w-full md:w-auto">
-                                            <button
-                                                onClick={handleEnterSystem}
-                                                className="w-full md:w-auto flex items-center justify-center gap-3 px-10 py-5 bg-brand-orange hover:bg-orange-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-orange-200 transition-all hover:-translate-y-1 hover:shadow-orange-300"
-                                            >
-                                                Entrar no Sistema <ArrowRight size={24} />
-                                            </button>
-
-                                            <div className="flex gap-2">
-                                                {heroCampaign.visualPdfPath && (
-                                                    <button
-                                                        onClick={() => handleGenerate(heroCampaign.id)}
-                                                        disabled={isGenerating}
-                                                        className="text-gray-500 hover:text-brand-orange text-sm font-medium px-4 py-2 hover:bg-orange-50 rounded-lg transition-colors flex items-center gap-1"
-                                                    >
-                                                        {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-                                                        Baixar PDF
-                                                    </button>
-                                                )}
+                                            {/* Main Action: ENTER */}
+                                            <div className="flex flex-col items-center gap-3 shrink-0 w-full md:w-auto">
                                                 <button
-                                                    onClick={() => handleEdit(heroCampaign)}
-                                                    className="text-gray-500 hover:text-blue-600 text-sm font-medium px-4 py-2 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1"
+                                                    onClick={handleEnterSystem}
+                                                    className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-brand-orange hover:bg-orange-500 text-white rounded-2xl font-bold text-base shadow-lg shadow-orange-200 transition-all hover:-translate-y-1 hover:shadow-orange-300"
                                                 >
-                                                    <Edit3 size={14} /> Editar
+                                                    Entrar no Sistema <ArrowRight size={20} />
                                                 </button>
+
+                                                <div className="flex gap-2">
+                                                    {campaign.visualPdfPath && (
+                                                        <button
+                                                            onClick={() => handleGenerate(campaign.id)}
+                                                            disabled={isGenerating}
+                                                            className="text-gray-500 hover:text-brand-orange text-sm font-medium px-3 py-1.5 hover:bg-orange-50 rounded-lg transition-colors flex items-center gap-1"
+                                                        >
+                                                            {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+                                                            Baixar PDF
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => handleEdit(campaign)}
+                                                        className="text-gray-500 hover:text-blue-600 text-sm font-medium px-3 py-1.5 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1"
+                                                    >
+                                                        <Edit3 size={14} /> Editar
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div >
-
-                                    {/* Additional Active Campaigns Indicator (if > 1) */}
-                                    {
-                                        activeCampaigns.length > 1 && (
-                                            <div className="bg-orange-50/50 border-t border-orange-100 p-4 flex items-center justify-between text-sm text-orange-800">
-                                                <span>
-                                                    <strong>+{activeCampaigns.length - 1}</strong> outra(s) campanha(s) ativa(s) simultaneamente.
-                                                </span>
-                                                <span className="text-xs opacity-75">Veja abaixo na lista</span>
-                                            </div>
-                                        )
-                                    }
-
-                                </div >
+                                    </div>
+                                ))}
 
                                 {/* QUICK CATALOG GENERATOR SECTION */}
                                 <div className="mt-8 bg-orange-50 border border-orange-200 rounded-3xl p-8 relative overflow-hidden">
@@ -684,40 +675,6 @@ export default function CampaignsPage() {
                                                     </span>
                                                     <span className="text-xs text-gray-400 mt-1 block">PDF até 100MB</span>
                                                 </div>
-                                            </div>
-
-                                            {/* Price PDFs */}
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-bold text-gray-700">Tabelas de Preço (PDFs)</label>
-                                                <div
-                                                    className="border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 rounded-2xl p-6 text-center cursor-pointer transition-all"
-                                                    onClick={() => priceInputRef.current?.click()}
-                                                >
-                                                    <input type="file" hidden ref={priceInputRef} accept=".pdf" multiple onChange={handlePriceFileSelect} />
-                                                    <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-400 mx-auto mb-3 flex items-center justify-center">
-                                                        <Upload size={24} />
-                                                    </div>
-                                                    <span className="text-sm font-medium text-gray-700">Adicionar Tabelas de Preço</span>
-                                                    <span className="text-xs text-gray-400 mt-1 block">Pode selecionar múltiplos arquivos</span>
-                                                </div>
-
-                                                {/* File List */}
-                                                {priceFiles.length > 0 && (
-                                                    <div className="flex flex-wrap gap-2 mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                        {priceFiles.map((f, i) => (
-                                                            <span key={i} className="inline-flex items-center gap-2 bg-white pl-3 pr-2 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200 shadow-sm">
-                                                                <span className="truncate max-w-[150px]">{f.name}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => { e.stopPropagation(); setPriceFiles(prev => prev.filter((_, idx) => idx !== i)); }}
-                                                                    className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-md transition-colors"
-                                                                >
-                                                                    <X size={14} />
-                                                                </button>
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
