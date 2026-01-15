@@ -371,17 +371,25 @@ export default function CatalogPage() {
 
                                 // Handle JSON response with download URL
                                 if (response.data.success && response.data.downloadUrl) {
-                                    // Open download in new tab
                                     const fullUrl = `https://n8n-apintegromat.r954jc.easypanel.host${response.data.downloadUrl}`;
-                                    window.open(fullUrl, '_blank');
 
-                                    // Also trigger direct download
-                                    const link = document.createElement('a');
-                                    link.href = fullUrl;
-                                    link.setAttribute('download', response.data.filename);
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    link.remove();
+                                    // Force download using fetch + blob (bypasses browser PDF viewer)
+                                    try {
+                                        const pdfResponse = await fetch(fullUrl);
+                                        const blob = await pdfResponse.blob();
+                                        const blobUrl = window.URL.createObjectURL(blob);
+
+                                        const link = document.createElement('a');
+                                        link.href = blobUrl;
+                                        link.download = response.data.filename || 'catalogo_markup.pdf';
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        link.remove();
+                                        window.URL.revokeObjectURL(blobUrl);
+                                    } catch (downloadError) {
+                                        // Fallback: open in new tab if fetch fails
+                                        window.open(fullUrl, '_blank');
+                                    }
                                 } else {
                                     throw new Error('Resposta inválida do servidor');
                                 }
