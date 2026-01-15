@@ -355,42 +355,26 @@ export default function CampaignsPage() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_120px_auto] gap-6 items-end relative z-10 max-w-5xl mx-auto">
+                                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_100px_auto] gap-4 items-end relative z-10 max-w-5xl mx-auto">
 
-                                        {/* Visual PDF Input */}
+                                        {/* Visual PDF Input - MATCHING CATALOG STYLE */}
                                         <div>
                                             <label className="block text-sm font-bold text-orange-900 mb-2 flex items-center gap-2">
                                                 <Upload size={14} /> Catálogo (Fotos)
                                             </label>
-                                            <div
-                                                onClick={() => quickVisualInputRef.current?.click()}
-                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                                onDrop={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    if (e.dataTransfer.files?.[0] && e.dataTransfer.files[0].type === 'application/pdf') {
-                                                        setQuickVisualFile(e.dataTransfer.files[0]);
-                                                    }
+                                            <input
+                                                type="file"
+                                                ref={quickVisualInputRef}
+                                                accept=".pdf"
+                                                onChange={(e) => {
+                                                    if (e.target.files?.[0]) setQuickVisualFile(e.target.files[0]);
                                                 }}
-                                                className="bg-white border-2 border-orange-200 rounded-xl px-4 py-3 cursor-pointer hover:border-orange-400 transition-colors flex items-center gap-3 truncate"
-                                            >
-                                                <input
-                                                    type="file"
-                                                    hidden
-                                                    ref={quickVisualInputRef}
-                                                    accept=".pdf"
-                                                    onChange={(e) => {
-                                                        if (e.target.files?.[0]) setQuickVisualFile(e.target.files[0]);
-                                                    }}
-                                                />
-                                                <span className={`text-sm font-medium truncate ${quickVisualFile ? 'text-gray-800' : 'text-gray-400'}`}>
-                                                    {quickVisualFile ? quickVisualFile.name : 'Escolher arquivo...'}
-                                                </span>
-                                            </div>
+                                                className="w-full px-4 py-3 bg-white border-2 border-orange-200 rounded-xl text-sm font-medium text-gray-700 cursor-pointer focus:outline-none focus:border-orange-400 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200"
+                                            />
                                             <p className="text-xs text-orange-600/60 mt-1">Arquivo com imagens e códigos</p>
                                         </div>
 
-                                        {/* Price PDFs Input */}
+                                        {/* Price PDFs Input - MATCHING CATALOG STYLE */}
                                         <div>
                                             <label className="block text-sm font-bold text-orange-900 mb-2 flex items-center gap-2">
                                                 <Database size={14} /> Tabela de Preços (Múltiplos)
@@ -420,7 +404,7 @@ export default function CampaignsPage() {
                                                         setQuickPriceFiles(prev => [...prev, ...newFiles]);
                                                     }
                                                 }}
-                                                className="bg-white border-2 border-dashed border-orange-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-orange-50 hover:border-orange-500 transition-colors flex items-center justify-center gap-2 text-orange-500"
+                                                className="bg-white/60 border-2 border-dashed border-orange-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-white hover:border-orange-500 transition-all flex flex-col items-center justify-center gap-1 text-orange-600"
                                             >
                                                 <input
                                                     type="file"
@@ -435,8 +419,8 @@ export default function CampaignsPage() {
                                                         }
                                                     }}
                                                 />
-                                                <Paperclip size={16} />
-                                                <span className="text-sm font-bold">Clique ou Solte Arquivos Aqui</span>
+                                                <Paperclip size={20} />
+                                                <span className="text-sm font-bold">Arquivos</span>
                                             </div>
                                         </div>
 
@@ -447,7 +431,7 @@ export default function CampaignsPage() {
                                                 type="number"
                                                 value={quickMarkup}
                                                 onChange={(e) => setQuickMarkup(e.target.value)}
-                                                className="w-full px-4 py-3 bg-white border-2 border-orange-200 rounded-xl text-center font-bold text-gray-800 focus:border-orange-500 outline-none"
+                                                className="w-full px-2 py-3 bg-white border-2 border-orange-200 rounded-xl text-center font-bold text-gray-800 focus:border-orange-500 outline-none"
                                             />
                                         </div>
 
