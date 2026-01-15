@@ -471,7 +471,7 @@ export default function CampaignsPage() {
 
                                                     formData.append('markupPercentage', quickMarkup);
 
-                                                    const response = await axios.post(`${API_URL}/catalog-markup/generate`, formData, {
+                                                    const response = await axios.post(`${API_URL}/catalog/generate-markup-upload`, formData, {
                                                         responseType: 'blob'
                                                     });
 
