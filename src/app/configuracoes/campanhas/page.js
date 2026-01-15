@@ -472,7 +472,9 @@ export default function CampaignsPage() {
                                                     formData.append('markupPercentage', quickMarkup);
 
                                                     const response = await axios.post(`${API_URL}/catalog/generate-markup-upload`, formData, {
-                                                        responseType: 'blob'
+                                                        headers: { 'Content-Type': 'multipart/form-data' },
+                                                        responseType: 'blob',
+                                                        timeout: 300000 // 5 minutes to allow for OpenAI Analysis
                                                     });
 
                                                     const url = window.URL.createObjectURL(new Blob([response.data]));
