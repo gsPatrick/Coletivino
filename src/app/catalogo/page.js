@@ -366,20 +366,25 @@ export default function CatalogPage() {
 
                                 const response = await api.post('/catalog/generate-markup-upload', formData, {
                                     headers: { 'Content-Type': 'multipart/form-data' },
-                                    responseType: 'blob',
-                                    timeout: 300000 // 5 minutes
+                                    timeout: 600000 // 10 minutes for AI processing
                                 });
 
-                                // Create download link
-                                const url = window.URL.createObjectURL(new Blob([response.data]));
-                                const link = document.createElement('a');
-                                link.href = url;
-                                const baseName = file.name.replace('.pdf', '').replace('.PDF', '');
-                                link.setAttribute('download', `${baseName}_markup_${markup}pct.pdf`);
-                                document.body.appendChild(link);
-                                link.click();
-                                link.remove();
-                                window.URL.revokeObjectURL(url);
+                                // Handle JSON response with download URL
+                                if (response.data.success && response.data.downloadUrl) {
+                                    // Open download in new tab
+                                    const fullUrl = `https://n8n-apintegromat.r954jc.easypanel.host${response.data.downloadUrl}`;
+                                    window.open(fullUrl, '_blank');
+
+                                    // Also trigger direct download
+                                    const link = document.createElement('a');
+                                    link.href = fullUrl;
+                                    link.setAttribute('download', response.data.filename);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    link.remove();
+                                } else {
+                                    throw new Error('Resposta inválida do servidor');
+                                }
 
                                 // Reset file input
                                 fileInput.value = '';

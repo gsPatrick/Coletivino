@@ -463,22 +463,30 @@ export default function CampaignsPage() {
 
                                                     const response = await api.post('/catalog/generate-markup-upload', formData, {
                                                         headers: { 'Content-Type': 'multipart/form-data' },
-                                                        responseType: 'blob',
-                                                        timeout: 300000 // 5 minutes to allow for OpenAI Analysis
+                                                        timeout: 600000 // 10 minutes for AI processing
                                                     });
 
-                                                    const url = window.URL.createObjectURL(new Blob([response.data]));
-                                                    const link = document.createElement('a');
-                                                    link.href = url;
-                                                    link.setAttribute('download', `catalogo-${heroCampaign.name}-${quickMarkup}pct.pdf`);
-                                                    document.body.appendChild(link);
-                                                    link.click();
-                                                    link.remove();
-                                                    alert('Gerado com Sucesso!');
+                                                    // Handle JSON response with download URL
+                                                    if (response.data.success && response.data.downloadUrl) {
+                                                        const fullUrl = `https://n8n-apintegromat.r954jc.easypanel.host${response.data.downloadUrl}`;
+                                                        window.open(fullUrl, '_blank');
+
+                                                        // Also trigger direct download
+                                                        const link = document.createElement('a');
+                                                        link.href = fullUrl;
+                                                        link.setAttribute('download', response.data.filename);
+                                                        document.body.appendChild(link);
+                                                        link.click();
+                                                        link.remove();
+
+                                                        alert(`Gerado com Sucesso! ${response.data.pricesUpdated} preços atualizados.`);
+                                                    } else {
+                                                        throw new Error('Resposta inválida do servidor');
+                                                    }
 
                                                 } catch (error) {
                                                     console.error(error);
-                                                    alert('Erro ao gerar catálogo.');
+                                                    alert('Erro ao gerar catálogo: ' + (error.response?.data?.error || error.message));
                                                 } finally {
                                                     setIsGenerating(false);
                                                 }
