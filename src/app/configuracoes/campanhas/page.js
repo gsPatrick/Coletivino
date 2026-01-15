@@ -5,7 +5,8 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Head from 'next/head';
 import { Upload, FileText, X, CheckCircle, Database, AlertCircle, Loader2, Play, Edit3, Trash2, Plus, Star, LogOut, ArrowRight, ToggleLeft, ToggleRight, Settings, Users, Paperclip } from 'lucide-react';
-
+import Link from 'next/link';
+import api from '../../../services/api';
 const TARGET_GROUPS = [
     { id: '120363166864812600-group', name: 'Grupo VIP' },
     { id: '120363402015772186-group', name: 'Grupo Coletivino' }
@@ -41,13 +42,12 @@ export default function CampaignsPage() {
     const visualInputRef = useRef(null);
     const priceInputRef = useRef(null);
 
-    import Link from 'next/link';
-    import api from '../../../services/api';
+
 
     const fetchCampaigns = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(`${API_URL}/campaigns`);
+            const res = await api.get('/campaigns');
             setCampaigns(res.data);
         } catch (error) {
             console.error('Failed to fetch campaigns', error);
@@ -76,7 +76,7 @@ export default function CampaignsPage() {
                 c.id === campaign.id ? { ...c, isActive: newStatus } : c
             ));
 
-            await axios.put(`${API_URL}/campaigns/${campaign.id}`, { isActive: newStatus });
+            await api.put(`/campaigns/${campaign.id}`, { isActive: newStatus });
             fetchCampaigns();
         } catch (error) {
             console.error('Error toggling campaign', error);
@@ -108,29 +108,34 @@ export default function CampaignsPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            let campaignId = editingId;
             let response;
 
             // 1. Save Basic Info
             const payload = { ...formData };
-            if (editingId) {
-                response = await axios.put(`${API_URL}/campaigns/${editingId}`, payload);
-            } else {
-                response = await axios.post(`${API_URL}/campaigns`, payload);
-                campaignId = response.data.id;
-            }
+            let campaignsList = [...campaigns];
+            let targetId = editingId;
 
-            // 2. Upload Files (if any)
+            if (editingId) {
+                const res = await api.put(`/campaigns/${editingId}`, payload);
+                campaignsList = campaigns.map(c => c.id === editingId ? res.data : c);
+            } else {
+                const res = await api.post('/campaigns', payload);
+                campaignsList = [res.data, ...campaigns];
+                targetId = res.data.id;
+            }
+            setCampaigns(campaignsList);
+
+            // Upload Files
             if (visualFile || priceFiles.length > 0) {
                 const uploadData = new FormData();
                 if (visualFile) uploadData.append('pdf', visualFile);
-                if (priceFiles.length > 0) {
-                    priceFiles.forEach(f => uploadData.append('pricePdf', f));
-                }
+                if (priceFiles.length > 0) priceFiles.forEach(f => uploadData.append('pricePdf', f));
+                uploadData.append('markupPercentage', formData.markupPercentage);
 
-                await axios.post(`${API_URL}/campaigns/${campaignId}/upload`, uploadData, {
+                await api.post(`/campaigns/${targetId}/upload`, uploadData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
+                fetchCampaigns(); // Refresh to show file status
             }
 
             alert(editingId ? 'Campanha atualizada!' : 'Campanha criada!');
