@@ -326,8 +326,6 @@ export default function CatalogPage() {
                             type="number"
                             id="markupPercentage"
                             defaultValue="20"
-                            min="0"
-                            max="200"
                             step="1"
                             style={{ width: '100%', padding: '12px 12px', borderRadius: '10px', border: '2px solid #ffcc80', background: 'white', fontSize: '1rem', fontWeight: 600, textAlign: 'center', outline: 'none' }}
                         />
