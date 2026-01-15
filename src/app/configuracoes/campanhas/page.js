@@ -450,7 +450,7 @@ export default function CampaignsPage() {
                                                     if (quickVisualFile) formData.append('pdf', quickVisualFile);
 
                                                     if (quickPriceFiles.length > 0) {
-                                                        quickPriceFiles.forEach(f => formData.append('pricePdfs', f));
+                                                        quickPriceFiles.forEach(f => formData.append('pricePdf', f));
                                                     }
 
                                                     formData.append('markupPercentage', quickMarkup);
