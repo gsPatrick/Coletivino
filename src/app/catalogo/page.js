@@ -29,15 +29,32 @@ export default function CatalogPage() {
     const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
     const [showPdfPreview, setShowPdfPreview] = useState(false);
 
+    // Global Campaign Context
+    const [selectedCampaignId, setSelectedCampaignId] = useState('');
+    const [selectedCampaignName, setSelectedCampaignName] = useState('Todas Ativas');
+    const [isInitialized, setIsInitialized] = useState(false);
+
     useEffect(() => {
-        // Initial load only fetches status, products are secondary now
-        fetchStatus();
-        fetchProducts();
+        // Read selected campaign
+        const campaignId = localStorage.getItem('selectedCampaignId') || '';
+        const campaignName = localStorage.getItem('selectedCampaignName') || 'Todas Ativas';
+        setSelectedCampaignId(campaignId);
+        setSelectedCampaignName(campaignName);
+        setIsInitialized(true);
     }, []);
+
+    useEffect(() => {
+        if (isInitialized) {
+            fetchStatus();
+            fetchProducts();
+        }
+    }, [isInitialized, selectedCampaignId]);
 
     const fetchProducts = async () => {
         try {
-            const res = await api.get('/catalog');
+            setLoading(true);
+            const campaignFilter = selectedCampaignId ? `?campaignId=${selectedCampaignId}` : '';
+            const res = await api.get(`/catalog${campaignFilter}`);
             setProducts(res.data.data || []);
         } catch (error) {
             console.error('Error fetching catalog:', error);
@@ -90,6 +107,9 @@ export default function CatalogPage() {
         const formData = new FormData();
         formData.append('pdf', selectedFile);
         formData.append('catalogName', enteredName);
+        if (selectedCampaignId) {
+            formData.append('campaignId', selectedCampaignId);
+        }
 
         try {
             // Simulate progression for better UX
