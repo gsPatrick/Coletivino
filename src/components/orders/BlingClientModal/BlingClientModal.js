@@ -21,28 +21,53 @@ export default function BlingClientModal({
     const [showAllClients, setShowAllClients] = useState(false);
     const [syncing, setSyncing] = useState(false);
 
+    const [searchTerm, setSearchTerm] = useState('');
+
     useEffect(() => {
+        // Initial search by phone
         searchClients();
     }, [customerPhone]);
 
-    const searchClients = async () => {
+    const searchClients = async (manualTerm = null) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.get(`/bling/clients/search?phone=${customerPhone}`);
+            let url = '/bling/clients/search?';
+
+            if (manualTerm) {
+                url += `term=${encodeURIComponent(manualTerm)}`;
+            } else {
+                url += `phone=${customerPhone}`;
+            }
+
+            const response = await api.get(url);
             const foundClients = response.data.clients || [];
             setClients(foundClients);
 
             // Auto-select best match (first one with CPF, or just first one)
+            // But only auto-select on initial phone search, not manual search unless 1 result
             if (foundClients.length > 0) {
-                const withCpf = foundClients.find(c => c.cpfCnpj);
-                setSelectedClient(withCpf || foundClients[0]);
+                if (!manualTerm || foundClients.length === 1) {
+                    const withCpf = foundClients.find(c => c.cpfCnpj);
+                    setSelectedClient(withCpf || foundClients[0]);
+                } else {
+                    setSelectedClient(null); // Let user choose from manual search
+                }
+            } else {
+                setSelectedClient(null);
             }
         } catch (err) {
             console.error('Error searching Bling clients:', err);
             setError('Erro ao buscar clientes no Bling');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleManualSubmit = (e) => {
+        e.preventDefault();
+        if (searchTerm.trim()) {
+            searchClients(searchTerm);
         }
     };
 
@@ -99,6 +124,44 @@ export default function BlingClientModal({
 
                 {/* Content */}
                 <div className={styles.content}>
+
+                    {/* Search Bar */}
+                    <form onSubmit={handleManualSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                            <input
+                                type="text"
+                                placeholder="Buscar por Nome, CPF ou Telefone..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '10px 10px 10px 36px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #dfe6e9',
+                                    fontSize: '14px',
+                                    outline: 'none'
+                                }}
+                            />
+                            <Search size={16} color="#b2bec3" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={{
+                                padding: '0 16px',
+                                background: '#0984e3',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontWeight: 600,
+                                opacity: loading ? 0.7 : 1
+                            }}
+                        >
+                            Buscar
+                        </button>
+                    </form>
+
                     {loading ? (
                         <div className={styles.loadingState}>
                             <Loader className={styles.spinner} size={32} />
