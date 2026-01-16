@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import api from '../../../services/api';
 import { X, Save, Check, Sparkles, MessageCircle, User, Calculator, ArrowRight, DollarSign } from 'lucide-react';
@@ -45,6 +45,30 @@ export default function EditModal({ order, onClose, onSave }) {
         } catch (error) {
             console.error('Error saving:', error);
             alert('Erro ao salvar. Verifique o console.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const [campaigns, setCampaigns] = useState([]);
+    const [showCampaignSelect, setShowCampaignSelect] = useState(false);
+
+    // Fetch campaigns on mount
+    useEffect(() => {
+        api.get('/campaigns').then(res => setCampaigns(res.data.filter(c => c.isActive))).catch(console.error);
+    }, []);
+
+    const handleMoveCampaign = async (newCampaignId) => {
+        if (!newCampaignId) return;
+        if (!confirm('Deseja mover este pedido para outra campanha?')) return;
+        setLoading(true);
+        try {
+            await api.put('/orders/move', { orderIds: [order.id], targetCampaignId: newCampaignId });
+            alert('Pedido movido com sucesso!');
+            onSave(); // Reload parent
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao mover pedido: ' + (error.response?.data?.error || error.message));
         } finally {
             setLoading(false);
         }
@@ -224,6 +248,43 @@ export default function EditModal({ order, onClose, onSave }) {
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f8fafc', overflowY: 'auto' }}>
 
                         <div style={{ padding: '24px', display: 'flex', gap: '24px', flexDirection: 'column' }}>
+
+                            {/* Campaign Transfer Section (NEW) */}
+                            <div className="card" style={{ padding: '16px 20px', border: '1px solid #e0e0e0', background: '#fff3e0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <ArrowRight size={20} color="#f57c00" />
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f57c00', textTransform: 'uppercase' }}>Campanha Atual</div>
+                                        {showCampaignSelect ? (
+                                            <select
+                                                autoFocus
+                                                onChange={(e) => handleMoveCampaign(e.target.value)}
+                                                onBlur={() => setShowCampaignSelect(false)}
+                                                style={{ padding: '4px', borderRadius: '4px', border: '1px solid #f57c00', marginTop: '4px' }}
+                                                defaultValue=""
+                                            >
+                                                <option value="" disabled>Selecione...</option>
+                                                {campaigns.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <div style={{ fontSize: '1rem', fontWeight: 700, color: '#333' }}>
+                                                {campaigns.find(c => c.id === order.campaignId)?.name || 'Desconhecida/Inativa'} <span style={{ fontSize: '0.8rem', color: '#888' }}>(ID: {order.campaignId})</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                {!showCampaignSelect && (
+                                    <button
+                                        onClick={() => setShowCampaignSelect(true)}
+                                        style={{ padding: '6px 12px', background: 'white', border: '1px solid #f57c00', color: '#f57c00', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+                                    >
+                                        Mover
+                                    </button>
+                                )}
+                            </div>
+
 
                             {/* Financial Info Card */}
                             <div className="card" style={{ padding: '20px', border: '1px solid #e2e8f0' }}>
