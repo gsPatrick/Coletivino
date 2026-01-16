@@ -14,6 +14,7 @@ export default function ClientsPage() {
     // Campaign Filter (from localStorage)
     const [selectedCampaignId, setSelectedCampaignId] = useState('');
     const [selectedCampaignName, setSelectedCampaignName] = useState('Todas Ativas');
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         // Read selected campaign from localStorage
@@ -21,11 +22,14 @@ export default function ClientsPage() {
         const campaignName = localStorage.getItem('selectedCampaignName') || 'Todas Ativas';
         setSelectedCampaignId(campaignId);
         setSelectedCampaignName(campaignName);
+        setIsInitialized(true);
     }, []);
 
     useEffect(() => {
-        fetchCustomers();
-    }, [selectedCampaignId]);
+        if (isInitialized) {
+            fetchCustomers();
+        }
+    }, [selectedCampaignId, isInitialized]);
 
     const fetchCustomers = async () => {
         try {

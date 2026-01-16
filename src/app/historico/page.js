@@ -20,6 +20,7 @@ export default function HistoryPage() {
     // Campaign Filter (from localStorage)
     const [selectedCampaignId, setSelectedCampaignId] = useState('');
     const [selectedCampaignName, setSelectedCampaignName] = useState('Todas Ativas');
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         // Read selected campaign from localStorage
@@ -27,11 +28,14 @@ export default function HistoryPage() {
         const campaignName = localStorage.getItem('selectedCampaignName') || 'Todas Ativas';
         setSelectedCampaignId(campaignId);
         setSelectedCampaignName(campaignName);
+        setIsInitialized(true);
     }, []);
 
     const campaignFilter = selectedCampaignId ? `&campaignId=${selectedCampaignId}` : '';
-    const { data: orders, error } = useSWR(`/orders?limit=100${campaignFilter}`, fetcher, { refreshInterval: 3000 });
-    const loading = !orders && !error;
+    // If not initialized, pass null to SWR to prevent fetch
+    const swrKey = isInitialized ? `/orders?limit=100${campaignFilter}` : null;
+    const { data: orders, error } = useSWR(swrKey, fetcher, { refreshInterval: 3000 });
+    const loading = !orders && !error && isInitialized;
 
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
