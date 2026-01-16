@@ -171,84 +171,82 @@ export default function BlingClientModal({
                         <div className={styles.errorState}>
                             <AlertCircle size={32} />
                             <p>{error}</p>
-                            <button onClick={searchClients}>Tentar novamente</button>
+                            <button onClick={() => searchClients()}>Tentar novamente</button>
                         </div>
-                    ) : selectedClient ? (
+                    ) : clients.length > 0 ? (
                         <>
-                            {/* Selected Client Card */}
-                            <div className={styles.selectedSection}>
-                                <div className={styles.sectionLabel}>
-                                    <Check size={16} className={styles.checkIcon} />
-                                    Cliente Identificado:
-                                </div>
-                                <div className={styles.selectedCard}>
-                                    <div className={styles.clientMainInfo}>
-                                        <div className={styles.clientName}>{selectedClient.nome}</div>
-                                        {selectedClient.cpfCnpj && (
-                                            <span className={styles.cpfBadge}>
-                                                CPF/CNPJ: {selectedClient.cpfCnpj}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className={styles.clientContactInfo}>
-                                        <div className={styles.contactRow}>
-                                            <span className={styles.contactLabel}>📱 Celular:</span>
-                                            <span>{formatPhone(selectedClient.celular) || '-'}</span>
+                            {selectedClient ? (
+                                <>
+                                    {/* Selected Client Card */}
+                                    <div className={styles.selectedSection}>
+                                        <div className={styles.sectionLabel}>
+                                            <Check size={16} className={styles.checkIcon} />
+                                            Cliente Selecionado:
                                         </div>
-                                        <div className={styles.contactRow}>
-                                            <span className={styles.contactLabel}>📞 Telefone:</span>
-                                            <span>{formatPhone(selectedClient.telefone) || '-'}</span>
-                                        </div>
-                                        <div className={styles.contactRow}>
-                                            <span className={styles.contactLabel}>✉️ Email:</span>
-                                            <span>{selectedClient.email || '-'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Other Options (Collapsible) */}
-                            {clients.length > 1 && (
-                                <div className={styles.otherOptionsSection}>
-                                    <button
-                                        className={styles.toggleBtn}
-                                        onClick={() => setShowAllClients(!showAllClients)}
-                                    >
-                                        <Edit2 size={14} />
-                                        {showAllClients ? 'Ocultar outros' : `Corrigir (${clients.length - 1} outros encontrados)`}
-                                        {showAllClients ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                    </button>
-
-                                    {showAllClients && (
-                                        <div className={styles.clientList}>
-                                            {clients.filter(c => c.id !== selectedClient.id).map((client) => (
-                                                <div
-                                                    key={client.id}
-                                                    className={styles.clientOption}
-                                                    onClick={() => {
-                                                        setSelectedClient(client);
-                                                        setShowAllClients(false);
-                                                    }}
-                                                >
-                                                    <div className={styles.optionInfo}>
-                                                        <div className={styles.optionName}>{client.nome}</div>
-                                                        <div className={styles.optionDetails}>
-                                                            {client.cpfCnpj && <span className={styles.smallCpf}>{client.cpfCnpj}</span>}
-                                                            {client.celular && <span>📱 {client.celular}</span>}
-                                                        </div>
-                                                    </div>
-                                                    <button className={styles.useBtn}>Usar este</button>
+                                        <div className={styles.selectedCard}>
+                                            <div className={styles.clientMainInfo}>
+                                                <div className={styles.clientName}>{selectedClient.nome}</div>
+                                                {selectedClient.cpfCnpj && (
+                                                    <span className={styles.cpfBadge}>
+                                                        CPF/CNPJ: {selectedClient.cpfCnpj}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className={styles.clientContactInfo}>
+                                                <div className={styles.contactRow}>
+                                                    <span className={styles.contactLabel}>📱 Celular:</span>
+                                                    <span>{formatPhone(selectedClient.celular) || '-'}</span>
                                                 </div>
-                                            ))}
+                                                <div className={styles.contactRow}>
+                                                    <span className={styles.contactLabel}>📞 Telefone:</span>
+                                                    <span>{formatPhone(selectedClient.telefone) || '-'}</span>
+                                                </div>
+                                                <div className={styles.contactRow}>
+                                                    <span className={styles.contactLabel}>✉️ Email:</span>
+                                                    <span>{selectedClient.email || '-'}</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                className={styles.changeBtn}
+                                                onClick={() => setSelectedClient(null)}
+                                                style={{ marginTop: '10px', width: '100%', padding: '8px', background: '#f1f2f6', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                            >
+                                                Trocar Cliente
+                                            </button>
                                         </div>
-                                    )}
+                                    </div>
+                                </>
+                            ) : (
+                                /* List Selection Mode (No client selected yet) */
+                                <div className={styles.selectionList}>
+                                    <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#636e72' }}>
+                                        {clients.length} clientes encontrados. Selecione um:
+                                    </p>
+                                    <div className={styles.clientList} style={{ maxHeight: '300px' }}>
+                                        {clients.map((client) => (
+                                            <div
+                                                key={client.id}
+                                                className={styles.clientOption}
+                                                onClick={() => setSelectedClient(client)}
+                                            >
+                                                <div className={styles.optionInfo}>
+                                                    <div className={styles.optionName}>{client.nome}</div>
+                                                    <div className={styles.optionDetails}>
+                                                        {client.cpfCnpj && <span className={styles.smallCpf}>{client.cpfCnpj}</span>}
+                                                        {client.celular && <span>📱 {client.celular}</span>}
+                                                    </div>
+                                                </div>
+                                                <button className={styles.useBtn}>Selecionar</button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </>
                     ) : (
                         <div className={styles.emptyState}>
                             <Search size={32} />
-                            <p><strong>Nenhum cliente encontrado</strong> com o telefone {customerPhone}</p>
+                            <p>Nenhum cliente encontrado.</p>
                             <p className={styles.hint}>
                                 Um novo cliente será criado automaticamente no Bling com os dados do pedido.
                             </p>
