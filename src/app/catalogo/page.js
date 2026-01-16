@@ -56,7 +56,15 @@ export default function CatalogPage() {
             setLoading(true);
             const campaignFilter = selectedCampaignId ? `?campaignId=${selectedCampaignId}` : '';
             const res = await api.get(`/catalog${campaignFilter}`);
-            setProducts(res.data.data || []);
+
+            // Double-check filtering on frontend in case backend returns cached/mixed data
+            let fetchedData = res.data.data || [];
+
+            if (selectedCampaignId) {
+                fetchedData = fetchedData.filter(p => p.campaignId === parseInt(selectedCampaignId));
+            }
+
+            setProducts(fetchedData);
         } catch (error) {
             console.error('Error fetching catalog:', error);
         } finally {
