@@ -45,6 +45,7 @@ export default function CatalogPage() {
 
     useEffect(() => {
         if (isInitialized) {
+            setProducts([]); // Clear list to prevent showing wrong data while loading
             fetchStatus();
             fetchProducts();
         }
