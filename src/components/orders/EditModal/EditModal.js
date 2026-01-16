@@ -265,12 +265,12 @@ export default function EditModal({ order, onClose, onSave }) {
                                             >
                                                 <option value="" disabled>Selecione...</option>
                                                 {campaigns.map(c => (
-                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                    <option key={c.id} value={c.id}>{c.name?.split(' ou ')[0] || c.name}</option>
                                                 ))}
                                             </select>
                                         ) : (
                                             <div style={{ fontSize: '1rem', fontWeight: 700, color: '#333' }}>
-                                                {campaigns.find(c => c.id === order.campaignId)?.name || 'Desconhecida/Inativa'} <span style={{ fontSize: '0.8rem', color: '#888' }}>(ID: {order.campaignId})</span>
+                                                {(campaigns.find(c => c.id === order.campaignId)?.name || 'Desconhecida/Inativa').split(' ou ')[0]} <span style={{ fontSize: '0.8rem', color: '#888' }}>(ID: {order.campaignId})</span>
                                             </div>
                                         )}
                                     </div>

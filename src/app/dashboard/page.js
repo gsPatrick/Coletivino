@@ -5,7 +5,8 @@ import api from '../../services/api';
 import OrderCard from '../../components/orders/OrderCard/OrderCard';
 import EditModal from '../../components/orders/EditModal/EditModal';
 import MessagePreviewModal from '../../components/orders/MessagePreviewModal/MessagePreviewModal';
-import { Package, RefreshCw, Inbox, Phone, ChevronDown, ChevronUp, CheckSquare, Square, Loader2, MessageSquare, Filter, Check, Clock } from 'lucide-react';
+import { Package, RefreshCw, Inbox, Phone, ChevronDown, ChevronUp, CheckSquare, Square, Loader2, MessageSquare, Filter, Check, Clock, ArrowRight } from 'lucide-react';
+import MoveCampaignModal from '../../components/orders/MoveCampaignModal/MoveCampaignModal';
 
 export default function Dashboard() {
     const [orders, setOrders] = useState([]);
@@ -16,6 +17,7 @@ export default function Dashboard() {
     const [syncing, setSyncing] = useState(null); // phone of customer currently syncing
     const [previewData, setPreviewData] = useState(null); // { group, selectedIds }
     const [syncFilter, setSyncFilter] = useState('all'); // 'all', 'pending', 'synced'
+    const [moveData, setMoveData] = useState(null); // { selectedIds: [] }
 
     // Campaign Filter
     const [selectedCampaignId, setSelectedCampaignId] = useState('');
@@ -231,7 +233,7 @@ export default function Dashboard() {
                         color: selectedCampaignId ? '#e67e22' : '#2d3436',
                         fontSize: '0.875rem'
                     }}>
-                        {selectedCampaignName}
+                        {selectedCampaignName?.split(' ou ')[0] || selectedCampaignName}
                     </span>
                 </div>
 
@@ -407,6 +409,28 @@ export default function Dashboard() {
                                                 </button>
                                             )}
 
+                                            {selectedCount > 0 && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setMoveData({ selectedIds: getSelectedIdsForCustomer(group) }); }}
+                                                    style={{
+                                                        padding: '8px 14px',
+                                                        borderRadius: '8px',
+                                                        border: 'none',
+                                                        background: '#8e44ad', // Purple
+                                                        color: 'white',
+                                                        fontWeight: 600,
+                                                        fontSize: '0.8rem',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px'
+                                                    }}
+                                                >
+                                                    <ArrowRight size={14} />
+                                                    Mover Selecionados
+                                                </button>
+                                            )}
+
                                             {/* Sync Selected Button */}
                                             {selectedCount > 0 && (
                                                 <button
@@ -528,6 +552,19 @@ export default function Dashboard() {
                     onSuccess={(count) => {
                         setPreviewData(null);
                         alert(`Sucesso! Mensagem enviada para o cliente.`);
+                    }}
+                />
+            )}
+
+            {/* Move Modal */}
+            {moveData && (
+                <MoveCampaignModal
+                    selectedIds={moveData.selectedIds}
+                    onClose={() => setMoveData(null)}
+                    onSuccess={() => {
+                        setMoveData(null);
+                        alert('Pedidos movidos com sucesso!');
+                        fetchOrders();
                     }}
                 />
             )}
