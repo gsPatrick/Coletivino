@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import api from '../../services/api';
 import { CheckCircle, Clock, Radio, Package, User, Phone } from 'lucide-react';
@@ -16,7 +17,25 @@ const getImageUrl = (imageUrl) => {
 };
 
 export default function HistoryPage() {
-    const { data: orders, error } = useSWR('/orders', fetcher, { refreshInterval: 3000 });
+    // Campaign Filter
+    const [campaigns, setCampaigns] = useState([]);
+    const [selectedCampaignId, setSelectedCampaignId] = useState('');
+
+    useEffect(() => {
+        const fetchCampaigns = async () => {
+            try {
+                const res = await api.get('/campaigns');
+                const activeCampaigns = res.data.filter(c => c.isActive);
+                setCampaigns(activeCampaigns);
+            } catch (error) {
+                console.error('Failed to fetch campaigns:', error);
+            }
+        };
+        fetchCampaigns();
+    }, []);
+
+    const campaignFilter = selectedCampaignId ? `&campaignId=${selectedCampaignId}` : '';
+    const { data: orders, error } = useSWR(`/orders?limit=100${campaignFilter}`, fetcher, { refreshInterval: 3000 });
     const loading = !orders && !error;
 
     return (
@@ -26,7 +45,9 @@ export default function HistoryPage() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '32px'
+                marginBottom: '32px',
+                flexWrap: 'wrap',
+                gap: '16px'
             }}>
                 <div>
                     <h1 style={{
@@ -46,25 +67,51 @@ export default function HistoryPage() {
                     </p>
                 </div>
 
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    background: '#dcfce7',
-                    color: '#166534',
-                    padding: '8px 16px',
-                    borderRadius: '999px',
-                    fontSize: '0.75rem',
-                    fontWeight: 600
-                }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    {/* Campaign Filter */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: '#71717a', fontSize: '0.875rem' }}>Campanha:</span>
+                        <select
+                            value={selectedCampaignId}
+                            onChange={(e) => setSelectedCampaignId(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid #e5e5e5',
+                                background: 'white',
+                                fontSize: '0.875rem',
+                                color: '#2d3436',
+                                minWidth: '160px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <option value="">Todas Ativas</option>
+                            {campaigns.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div style={{
-                        width: '8px',
-                        height: '8px',
-                        background: '#16a34a',
-                        borderRadius: '50%',
-                        animation: 'pulse 2s infinite'
-                    }} />
-                    Ao Vivo
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: '#dcfce7',
+                        color: '#166534',
+                        padding: '8px 16px',
+                        borderRadius: '999px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600
+                    }}>
+                        <div style={{
+                            width: '8px',
+                            height: '8px',
+                            background: '#16a34a',
+                            borderRadius: '50%',
+                            animation: 'pulse 2s infinite'
+                        }} />
+                        Ao Vivo
+                    </div>
                 </div>
             </div>
 

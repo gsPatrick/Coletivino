@@ -11,13 +11,33 @@ export default function ClientsPage() {
     const [expandedCustomer, setExpandedCustomer] = useState(null); // Phone of expanded customer
     const [customerOrders, setCustomerOrders] = useState({}); // Cache for fetched orders { phone: [orders] }
 
+    // Campaign Filter
+    const [campaigns, setCampaigns] = useState([]);
+    const [selectedCampaignId, setSelectedCampaignId] = useState('');
+
+    useEffect(() => {
+        fetchCampaigns();
+    }, []);
+
     useEffect(() => {
         fetchCustomers();
-    }, []);
+    }, [selectedCampaignId]);
+
+    const fetchCampaigns = async () => {
+        try {
+            const res = await api.get('/campaigns');
+            const activeCampaigns = res.data.filter(c => c.isActive);
+            setCampaigns(activeCampaigns);
+        } catch (error) {
+            console.error('Failed to fetch campaigns:', error);
+        }
+    };
 
     const fetchCustomers = async () => {
         try {
-            const res = await api.get('/customers');
+            setLoading(true);
+            const campaignFilter = selectedCampaignId ? `?campaignId=${selectedCampaignId}` : '';
+            const res = await api.get(`/customers${campaignFilter}`);
             setCustomers(res.data);
         } catch (error) {
             console.error('Failed to fetch customers', error);
@@ -64,13 +84,39 @@ export default function ClientsPage() {
 
     return (
         <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
-            <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#ffeaa7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <User size={28} color="#d35400" />
+            <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#ffeaa7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <User size={28} color="#d35400" />
+                    </div>
+                    <div>
+                        <h1 style={{ fontSize: '2rem', marginBottom: '4px' }}>Clientes</h1>
+                        <p style={{ color: '#636e72' }}>Gerencie pedidos por cliente</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 style={{ fontSize: '2rem', marginBottom: '4px' }}>Clientes</h1>
-                    <p style={{ color: '#636e72' }}>Gerencie pedidos por cliente</p>
+
+                {/* Campaign Filter */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: '#636e72', fontSize: '0.9rem' }}>Campanha:</span>
+                    <select
+                        value={selectedCampaignId}
+                        onChange={(e) => setSelectedCampaignId(e.target.value)}
+                        style={{
+                            padding: '10px 14px',
+                            borderRadius: '8px',
+                            border: '1px solid #dfe6e9',
+                            background: 'white',
+                            fontSize: '0.9rem',
+                            color: '#2d3436',
+                            minWidth: '180px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <option value="">Todas Ativas</option>
+                        {campaigns.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
