@@ -38,27 +38,29 @@ export default function EditModal({ order, onClose, onSave }) {
     const handleSave = async (sync = false) => {
         setLoading(true);
         try {
+            // First save the order data
             await api.put(`/orders/${order.id}`, formData);
 
             if (sync) {
-                // Check if client mapping exists
+                // Check if client mapping already exists
                 const mappingRes = await api.get(`/bling/clients/mapping/${order.customerPhone}`);
 
-                if (!mappingRes.data.found) {
-                    // No mapping - show client selection modal
+                if (mappingRes.data.found) {
+                    // Mapping exists - sync directly
+                    await api.post(`/orders/${order.id}/sync-bling`);
+                    alert(`Pedido sincronizado com cliente: ${mappingRes.data.mapping.blingClientName}`);
+                    onSave();
+                } else {
+                    // No mapping - show client confirmation modal
                     setPendingSync(true);
                     setShowBlingClientModal(true);
                     setLoading(false);
                     return;
                 }
-
-                // Mapping exists - proceed with sync
-                await api.post(`/orders/${order.id}/sync-bling`);
-                alert('Pedido salvo e enviado para o Bling!');
             } else {
                 alert('Dados salvos localmente!');
+                onSave();
             }
-            onSave();
         } catch (error) {
             console.error('Error saving:', error);
             alert('Erro ao salvar. Verifique o console.');
@@ -67,13 +69,13 @@ export default function EditModal({ order, onClose, onSave }) {
         }
     };
 
-    // Called after client is selected in the modal
-    const handleBlingClientSelected = async (client) => {
+    // Called after client is confirmed in the modal
+    const handleBlingClientConfirmed = async (client) => {
         setShowBlingClientModal(false);
         setLoading(true);
         try {
             await api.post(`/orders/${order.id}/sync-bling`);
-            alert(`Pedido sincronizado com o cliente: ${client.nome}`);
+            alert(`Pedido sincronizado com cliente: ${client.nome}`);
             onSave();
         } catch (error) {
             console.error('Error syncing:', error);
@@ -84,8 +86,8 @@ export default function EditModal({ order, onClose, onSave }) {
         }
     };
 
-    // Called if user skips client selection (create new)
-    const handleSkipClientSelection = async () => {
+    // Called if user wants to create a new client instead
+    const handleCreateNewClient = async () => {
         setShowBlingClientModal(false);
         setLoading(true);
         try {
@@ -101,7 +103,7 @@ export default function EditModal({ order, onClose, onSave }) {
         }
     };
 
-    const [campaigns, setCampaigns] = useState([]);
+    const [campaigns, setCampaigns] = useState([])
     const [showCampaignSelect, setShowCampaignSelect] = useState(false);
 
     // Fetch campaigns on mount
@@ -512,17 +514,17 @@ export default function EditModal({ order, onClose, onSave }) {
                 </div>
             </div>
 
-            {/* Bling Client Selection Modal */}
+            {/* Bling Client Confirmation Modal */}
             {showBlingClientModal && (
                 <BlingClientModal
                     customerPhone={order.customerPhone}
                     customerName={order.customerName}
-                    onSelect={handleBlingClientSelected}
+                    onConfirm={handleBlingClientConfirmed}
                     onClose={() => {
                         setShowBlingClientModal(false);
                         setPendingSync(false);
                     }}
-                    onSkip={handleSkipClientSelection}
+                    onCreateNew={handleCreateNewClient}
                 />
             )}
         </>
