@@ -153,7 +153,7 @@ export default function CampaignsPage() {
 
         setIsGenerating(true);
         try {
-            const response = await axios.post(`${API_URL}/campaigns/${campaignId}/generate`, {}, {
+            const response = await api.post(`/campaigns/${campaignId}/generate`, {}, {
                 responseType: 'blob',
                 timeout: 300000
             });
@@ -170,7 +170,7 @@ export default function CampaignsPage() {
             alert('Download iniciado!');
         } catch (error) {
             console.error('Generation failed', error);
-            alert('Falha na geração do PDF.');
+            alert('Falha na geração do PDF: ' + (error.response?.data?.error || error.message));
         } finally {
             setIsGenerating(false);
         }
@@ -200,11 +200,12 @@ export default function CampaignsPage() {
     const handleDelete = async (id) => {
         if (!confirm('Tem certeza que deseja excluir esta campanha?')) return;
         try {
-            await axios.delete(`${API_URL}/campaigns/${id}`);
+            await api.delete(`/campaigns/${id}`);
+            alert('Campanha excluída com sucesso!');
             fetchCampaigns();
         } catch (error) {
             console.error('Error deleting campaign', error);
-            alert('Erro ao excluir campanha.');
+            alert('Erro ao excluir campanha: ' + (error.response?.data?.error || error.message));
         }
     };
 
