@@ -86,6 +86,16 @@ export default function CampaignsPage() {
     };
 
     const handleEnterSystem = () => {
+        // Clear any selected campaign (show all)
+        localStorage.removeItem('selectedCampaignId');
+        localStorage.removeItem('selectedCampaignName');
+        router.push('/dashboard');
+    };
+
+    const handleEnterCampaign = (campaign) => {
+        // Save selected campaign to localStorage
+        localStorage.setItem('selectedCampaignId', campaign.id);
+        localStorage.setItem('selectedCampaignName', campaign.name);
         router.push('/dashboard');
     };
 
@@ -309,10 +319,10 @@ export default function CampaignsPage() {
                                             {/* Main Action: ENTER */}
                                             <div className="flex flex-col items-center gap-3 shrink-0 w-full md:w-auto">
                                                 <button
-                                                    onClick={handleEnterSystem}
+                                                    onClick={() => handleEnterCampaign(campaign)}
                                                     className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-brand-orange hover:bg-orange-500 text-white rounded-2xl font-bold text-base shadow-lg shadow-orange-200 transition-all hover:-translate-y-1 hover:shadow-orange-300"
                                                 >
-                                                    Entrar no Sistema <ArrowRight size={20} />
+                                                    Entrar na Campanha <ArrowRight size={20} />
                                                 </button>
 
                                                 <div className="flex gap-2">

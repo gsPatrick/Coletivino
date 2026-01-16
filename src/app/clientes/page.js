@@ -11,27 +11,21 @@ export default function ClientsPage() {
     const [expandedCustomer, setExpandedCustomer] = useState(null); // Phone of expanded customer
     const [customerOrders, setCustomerOrders] = useState({}); // Cache for fetched orders { phone: [orders] }
 
-    // Campaign Filter
-    const [campaigns, setCampaigns] = useState([]);
+    // Campaign Filter (from localStorage)
     const [selectedCampaignId, setSelectedCampaignId] = useState('');
+    const [selectedCampaignName, setSelectedCampaignName] = useState('Todas Ativas');
 
     useEffect(() => {
-        fetchCampaigns();
+        // Read selected campaign from localStorage
+        const campaignId = localStorage.getItem('selectedCampaignId') || '';
+        const campaignName = localStorage.getItem('selectedCampaignName') || 'Todas Ativas';
+        setSelectedCampaignId(campaignId);
+        setSelectedCampaignName(campaignName);
     }, []);
 
     useEffect(() => {
         fetchCustomers();
     }, [selectedCampaignId]);
-
-    const fetchCampaigns = async () => {
-        try {
-            const res = await api.get('/campaigns');
-            const activeCampaigns = res.data.filter(c => c.isActive);
-            setCampaigns(activeCampaigns);
-        } catch (error) {
-            console.error('Failed to fetch campaigns:', error);
-        }
-    };
 
     const fetchCustomers = async () => {
         try {
@@ -95,28 +89,24 @@ export default function ClientsPage() {
                     </div>
                 </div>
 
-                {/* Campaign Filter */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Campaign Badge */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    background: selectedCampaignId ? '#fff3e0' : '#f5f5f5',
+                    borderRadius: '8px',
+                    border: selectedCampaignId ? '1px solid #e67e22' : '1px solid #dfe6e9'
+                }}>
                     <span style={{ color: '#636e72', fontSize: '0.9rem' }}>Campanha:</span>
-                    <select
-                        value={selectedCampaignId}
-                        onChange={(e) => setSelectedCampaignId(e.target.value)}
-                        style={{
-                            padding: '10px 14px',
-                            borderRadius: '8px',
-                            border: '1px solid #dfe6e9',
-                            background: 'white',
-                            fontSize: '0.9rem',
-                            color: '#2d3436',
-                            minWidth: '180px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        <option value="">Todas Ativas</option>
-                        {campaigns.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
+                    <span style={{
+                        fontWeight: 600,
+                        color: selectedCampaignId ? '#e67e22' : '#2d3436',
+                        fontSize: '0.9rem'
+                    }}>
+                        {selectedCampaignName}
+                    </span>
                 </div>
             </div>
 
