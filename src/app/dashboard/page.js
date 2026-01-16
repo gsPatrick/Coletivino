@@ -17,14 +17,33 @@ export default function Dashboard() {
     const [previewData, setPreviewData] = useState(null); // { group, selectedIds }
     const [syncFilter, setSyncFilter] = useState('all'); // 'all', 'pending', 'synced'
 
+    // Campaign Filter
+    const [campaigns, setCampaigns] = useState([]);
+    const [selectedCampaignId, setSelectedCampaignId] = useState(''); // '' = all active
+
+    useEffect(() => {
+        fetchCampaigns();
+    }, []);
+
     useEffect(() => {
         fetchOrders();
-    }, []);
+    }, [selectedCampaignId]);
+
+    const fetchCampaigns = async () => {
+        try {
+            const res = await api.get('/campaigns');
+            const activeCampaigns = res.data.filter(c => c.isActive);
+            setCampaigns(activeCampaigns);
+        } catch (error) {
+            console.error('Failed to fetch campaigns:', error);
+        }
+    };
 
     const fetchOrders = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/orders?limit=100');
+            const campaignFilter = selectedCampaignId ? `&campaignId=${selectedCampaignId}` : '';
+            const response = await api.get(`/orders?limit=100${campaignFilter}`);
             const grouped = {};
             response.data.data.forEach(order => {
                 const phone = order.customerPhone;
@@ -197,10 +216,36 @@ export default function Dashboard() {
             </div>
 
             {/* Filter Buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                {/* Campaign Filter */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: '#71717a', fontSize: '0.875rem' }}>Campanha:</span>
+                    <select
+                        value={selectedCampaignId}
+                        onChange={(e) => setSelectedCampaignId(e.target.value)}
+                        style={{
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #e5e5e5',
+                            background: 'white',
+                            fontSize: '0.875rem',
+                            color: '#2d3436',
+                            minWidth: '180px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <option value="">Todas Ativas</option>
+                        {campaigns.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div style={{ width: '1px', height: '24px', background: '#e5e5e5' }} />
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#71717a', fontSize: '0.875rem' }}>
                     <Filter size={16} />
-                    <span>Filtrar:</span>
+                    <span>Status:</span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <button
