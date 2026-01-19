@@ -24,35 +24,48 @@ export default function BlingClientModal({
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        // Initial search by phone
-        searchClients();
-    }, [customerPhone]);
+        // On mount, load ALL Bling clients (no filter)
+        loadAllClients();
+    }, []);
 
-    const searchClients = async (manualTerm = null) => {
+    // Load all clients from Bling (no filter)
+    const loadAllClients = async () => {
         setLoading(true);
         setError(null);
         try {
-            let url = '/bling/clients/search?';
+            // Call without phone/term to get default list of 100 clients
+            const response = await api.get('/bling/clients/search');
+            const foundClients = response.data.clients || [];
+            setClients(foundClients);
 
-            if (manualTerm) {
-                url += `term=${encodeURIComponent(manualTerm)}`;
-            } else {
-                url += `phone=${customerPhone}`;
-            }
+            // Don't auto-select when loading all - let user choose
+            setSelectedClient(null);
+        } catch (err) {
+            console.error('Error loading Bling clients:', err);
+            setError('Erro ao carregar clientes do Bling');
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    const searchClients = async (searchTerm) => {
+        if (!searchTerm || !searchTerm.trim()) {
+            // If empty search, reload all clients
+            loadAllClients();
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+        try {
+            const url = `/bling/clients/search?term=${encodeURIComponent(searchTerm.trim())}`;
             const response = await api.get(url);
             const foundClients = response.data.clients || [];
             setClients(foundClients);
 
-            // Auto-select best match (first one with CPF, or just first one)
-            // But only auto-select on initial phone search, not manual search unless 1 result
-            if (foundClients.length > 0) {
-                if (!manualTerm || foundClients.length === 1) {
-                    const withCpf = foundClients.find(c => c.cpfCnpj);
-                    setSelectedClient(withCpf || foundClients[0]);
-                } else {
-                    setSelectedClient(null); // Let user choose from manual search
-                }
+            // Auto-select if only 1 result
+            if (foundClients.length === 1) {
+                setSelectedClient(foundClients[0]);
             } else {
                 setSelectedClient(null);
             }
@@ -66,9 +79,7 @@ export default function BlingClientModal({
 
     const handleManualSubmit = (e) => {
         e.preventDefault();
-        if (searchTerm.trim()) {
-            searchClients(searchTerm);
-        }
+        searchClients(searchTerm);
     };
 
     const handleConfirm = async () => {
@@ -171,7 +182,7 @@ export default function BlingClientModal({
                         <div className={styles.errorState}>
                             <AlertCircle size={32} />
                             <p>{error}</p>
-                            <button onClick={() => searchClients()}>Tentar novamente</button>
+                            <button onClick={loadAllClients}>Tentar novamente</button>
                         </div>
                     ) : clients.length > 0 ? (
                         <>

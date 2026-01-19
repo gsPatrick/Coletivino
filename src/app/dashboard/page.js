@@ -5,7 +5,8 @@ import api from '../../services/api';
 import OrderCard from '../../components/orders/OrderCard/OrderCard';
 import EditModal from '../../components/orders/EditModal/EditModal';
 import MessagePreviewModal from '../../components/orders/MessagePreviewModal/MessagePreviewModal';
-import { Package, RefreshCw, Inbox, Phone, ChevronDown, ChevronUp, CheckSquare, Square, Loader2, MessageSquare, Filter, Check, Clock, ArrowRight } from 'lucide-react';
+import BlingClientModal from '../../components/orders/BlingClientModal/BlingClientModal';
+import { Package, RefreshCw, Inbox, Phone, ChevronDown, ChevronUp, CheckSquare, Square, Loader2, MessageSquare, Filter, Check, Clock, ArrowRight, Trash2 } from 'lucide-react';
 import MoveCampaignModal from '../../components/orders/MoveCampaignModal/MoveCampaignModal';
 
 export default function Dashboard() {
@@ -19,6 +20,7 @@ export default function Dashboard() {
     const [syncFilter, setSyncFilter] = useState('all'); // 'all', 'pending', 'synced'
     const [moveData, setMoveData] = useState(null); // { selectedIds: [] }
     const [isValidating, setIsValidating] = useState(false);
+    const [blingClientData, setBlingClientData] = useState(null); // { group, mode: 'selected' | 'all' }
 
     // Campaign Filter
     const [selectedCampaignId, setSelectedCampaignId] = useState('');
@@ -115,16 +117,57 @@ export default function Dashboard() {
         return group.orders.filter(o => selectedOrders[o.id]).map(o => o.id);
     };
 
-    // Sync selected orders
-    const handleSyncSelected = async (group) => {
+    // Open Bling Client Modal before syncing
+    const handleOpenBlingClientModal = (group, mode = 'all') => {
         const selectedIds = getSelectedIdsForCustomer(group);
 
-        if (selectedIds.length === 0) {
+        if (mode === 'selected' && selectedIds.length === 0) {
             alert('Selecione pelo menos um pedido pendente para sincronizar.');
             return;
         }
 
-        if (!confirm(`Deseja sincronizar ${selectedIds.length} pedido(s) separadamente?`)) return;
+        const pendingOrders = group.orders.filter(o => !o.blingSyncedAt);
+        if (pendingOrders.length === 0) {
+            alert('Todos os pedidos deste cliente já foram sincronizados!');
+            return;
+        }
+
+        // Open the modal to select/confirm the Bling client
+        setBlingClientData({ group, mode });
+    };
+
+    // Handle when user confirms client selection in modal
+    const handleBlingClientConfirm = async (selectedClient) => {
+        if (!blingClientData) return;
+
+        const { group, mode } = blingClientData;
+        setBlingClientData(null); // Close modal
+
+        if (mode === 'selected') {
+            await performSyncSelected(group);
+        } else {
+            await performSyncAllGrouped(group);
+        }
+    };
+
+    // Handle create new client option
+    const handleBlingClientCreateNew = async () => {
+        if (!blingClientData) return;
+
+        const { group, mode } = blingClientData;
+        setBlingClientData(null); // Close modal
+
+        // Proceed with sync - backend will create client automatically
+        if (mode === 'selected') {
+            await performSyncSelected(group);
+        } else {
+            await performSyncAllGrouped(group);
+        }
+    };
+
+    // Sync selected orders (actual sync logic)
+    const performSyncSelected = async (group) => {
+        const selectedIds = getSelectedIdsForCustomer(group);
 
         setSyncing(group.customerPhone);
         try {
@@ -147,18 +190,8 @@ export default function Dashboard() {
         }
     };
 
-    // Sync ALL orders for a customer (grouped into one Bling order)
-    const handleSyncAllGrouped = async (group) => {
-        // Only sync PENDING orders (not yet synced to Bling)
-        const pendingOrders = group.orders.filter(o => !o.blingSyncedAt);
-
-        if (pendingOrders.length === 0) {
-            alert('Todos os pedidos deste cliente já foram sincronizados!');
-            return;
-        }
-
-        if (!confirm(`Deseja sincronizar ${pendingOrders.length} pedido(s) pendentes deste cliente como UM ÚNICO pedido agrupado no Bling?`)) return;
-
+    // Sync ALL orders for a customer (grouped into one Bling order) - actual sync logic
+    const performSyncAllGrouped = async (group) => {
         setSyncing(group.customerPhone);
         try {
             await api.post(`/customers/${encodeURIComponent(group.customerPhone)}/sync`);
@@ -169,6 +202,16 @@ export default function Dashboard() {
         } finally {
             setSyncing(null);
         }
+    };
+
+    // Legacy handlers that now open the modal first
+    const handleSyncSelected = (group) => {
+        handleOpenBlingClientModal(group, 'selected');
+    };
+
+    // Sync ALL orders for a customer (grouped into one Bling order)
+    const handleSyncAllGrouped = (group) => {
+        handleOpenBlingClientModal(group, 'all');
     };
 
     // Open Confirmation Preview
@@ -606,6 +649,17 @@ export default function Dashboard() {
                 />
             )}
 
+            {/* Bling Client Selection Modal */}
+            {blingClientData && (
+                <BlingClientModal
+                    customerPhone={blingClientData.group.customerPhone}
+                    customerName={blingClientData.group.customerName}
+                    onConfirm={handleBlingClientConfirm}
+                    onClose={() => setBlingClientData(null)}
+                    onCreateNew={handleBlingClientCreateNew}
+                />
+            )}
+
             {/* Global Actions Bar */}
             {getSelectedIds().length > 0 && (
                 <div style={{
@@ -668,6 +722,43 @@ export default function Dashboard() {
                     >
                         <ArrowRight size={16} />
                         Mover
+                    </button>
+
+                    <button
+                        onClick={async () => {
+                            const ids = getSelectedIds();
+                            if (ids.length === 0) return;
+                            if (!confirm(`TEM CERTEZA? Deseja EXCLUIR ${ids.length} pedidos? Essa ação não pode ser desfeita.`)) return;
+
+                            setIsValidating(true);
+                            try {
+                                await api.delete('/orders/bulk', { data: { ids } });
+                                alert('Pedidos excluídos com sucesso.');
+                                fetchOrders();
+                                setSelectedOrders({});
+                            } catch (error) {
+                                console.error('Error deleting:', error);
+                                alert('Erro ao excluir: ' + (error.response?.data?.error || error.message));
+                            } finally {
+                                setIsValidating(false);
+                            }
+                        }}
+                        disabled={isValidating}
+                        style={{
+                            background: '#ff7675', // Red
+                            color: 'white',
+                            border: 'none',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontWeight: 600
+                        }}
+                    >
+                        <Trash2 size={16} />
+                        Excluir
                     </button>
                 </div>
             )}
