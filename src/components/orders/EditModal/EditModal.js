@@ -42,21 +42,11 @@ export default function EditModal({ order, onClose, onSave }) {
             await api.put(`/orders/${order.id}`, formData);
 
             if (sync) {
-                // Check if client mapping already exists
-                const mappingRes = await api.get(`/bling/clients/mapping/${order.customerPhone}`);
-
-                if (mappingRes.data.found) {
-                    // Mapping exists - sync directly
-                    await api.post(`/orders/${order.id}/sync-bling`);
-                    alert(`Pedido sincronizado com cliente: ${mappingRes.data.mapping.blingClientName}`);
-                    onSave();
-                } else {
-                    // No mapping - show client confirmation modal
-                    setPendingSync(true);
-                    setShowBlingClientModal(true);
-                    setLoading(false);
-                    return;
-                }
+                // Show client confirmation modal (Always enforced)
+                setPendingSync(true);
+                setShowBlingClientModal(true);
+                setLoading(false);
+                return;
             } else {
                 alert('Dados salvos localmente!');
                 onSave();

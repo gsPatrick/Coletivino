@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, Phone, CreditCard, Loader2, LinkIcon, CheckCircle } from 'lucide-react';
+import BlingClientModal from '../BlingClientModal/BlingClientModal';
 import api from '../../../services/api';
 
 export default function MessagePreviewModal({ group, selectedIds, onClose, onSuccess }) {
@@ -9,7 +10,12 @@ export default function MessagePreviewModal({ group, selectedIds, onClose, onSuc
     const [generatePaymentLink, setGeneratePaymentLink] = useState(false);
     const [generatingLink, setGeneratingLink] = useState(false);
     const [paymentLink, setPaymentLink] = useState(null);
+
     const [linkGenerated, setLinkGenerated] = useState(false);
+
+    // Bling Modal State
+    const [showBlingClientModal, setShowBlingClientModal] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null); // 'link_only' or 'send_with_link'
 
     useEffect(() => {
         fetchPreview();
@@ -80,11 +86,28 @@ export default function MessagePreviewModal({ group, selectedIds, onClose, onSuc
         }
     };
 
-    // Handler for "Generate Link Only" - generates link and lets user edit message
-    const handleGenerateLinkOnly = async () => {
-        const link = await handleGeneratePaymentLink();
-        if (link) {
-            // Just show success - user can edit and send
+    // Handler for "Generate Link Only" - Open Modal First
+    const handleGenerateLinkClick = () => {
+        setPendingAction('link_only');
+        setShowBlingClientModal(true);
+    };
+
+    // Handler when Bling Client is confirmed
+    const handleBlingClientConfirmed = async (client) => {
+        setShowBlingClientModal(false);
+
+        if (pendingAction === 'link_only') {
+            await handleGeneratePaymentLink();
+            setPendingAction(null);
+        }
+    };
+
+    // Handler for new client creation (just proceed, backend/modal handles it)
+    const handleCreateNewClient = async () => {
+        setShowBlingClientModal(false);
+        if (pendingAction === 'link_only') {
+            await handleGeneratePaymentLink();
+            setPendingAction(null);
         }
     };
 
@@ -152,7 +175,7 @@ export default function MessagePreviewModal({ group, selectedIds, onClose, onSuc
                                             Isso irá sincronizar o pedido no Bling (como "Em aberto") e criar uma cobrança no Asaas.
                                         </p>
                                         <button
-                                            onClick={handleGenerateLinkOnly}
+                                            onClick={handleGenerateLinkClick}
                                             disabled={generatingLink}
                                             style={{
                                                 width: '100%',
@@ -297,6 +320,23 @@ export default function MessagePreviewModal({ group, selectedIds, onClose, onSuc
                     </button>
                 </div>
             </div>
-        </div>
+
+
+            {/* Bling Client Modal */}
+            {
+                showBlingClientModal && (
+                    <BlingClientModal
+                        customerPhone={group.customerPhone}
+                        customerName={group.customerName}
+                        onConfirm={handleBlingClientConfirmed}
+                        onClose={() => {
+                            setShowBlingClientModal(false);
+                            setPendingAction(null);
+                        }}
+                        onCreateNew={handleCreateNewClient}
+                    />
+                )
+            }
+        </div >
     );
 }
